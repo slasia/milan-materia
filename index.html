@@ -1011,22 +1011,220 @@
     /* ===== HIDDEN FILTER ===== */
     .prod-card.hidden { display: none !important; }
 
+    /* ===== HAMBURGER ===== */
+    .mob-menu-btn {
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      gap: 5px;
+      width: 36px; height: 36px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      padding: 8px;
+      flex-shrink: 0;
+    }
+    .mob-menu-btn span {
+      display: block;
+      height: 1.5px;
+      background: var(--gold);
+      border-radius: 2px;
+      transition: all .3s ease;
+      transform-origin: center;
+    }
+    .mob-menu-btn.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+    .mob-menu-btn.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+    .mob-menu-btn.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+    /* ===== MOBILE NAV OVERLAY ===== */
+    .mob-nav {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 190;
+      background: rgba(8,7,6,.98);
+      backdrop-filter: blur(20px);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .3s ease;
+    }
+    .mob-nav.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .mob-nav a {
+      font-family: 'Cinzel', serif;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 18px 0;
+      width: 100%;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      transition: color .2s;
+    }
+    .mob-nav a:first-child { border-top: 1px solid var(--border); }
+    .mob-nav a:hover, .mob-nav a:active { color: var(--gold); }
+    .mob-nav-socials {
+      display: flex;
+      gap: 16px;
+      margin-top: 36px;
+    }
+    .mob-nav-socials a {
+      font-family: 'Josefin Sans', sans-serif;
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      border: none !important;
+      padding: 0 !important;
+      color: var(--muted);
+      width: auto !important;
+    }
+
     /* ===== RESPONSIVE ===== */
+
+    /* Tablet */
     @media (max-width: 960px) {
       nav { display: none; }
-      .hero-slide { flex-direction: column; padding: 52px 20px 80px; gap: 40px; }
+      .mob-menu-btn { display: flex; }
+      .mob-nav { display: flex; }
+
+      /* Header */
+      .header-inner { height: 60px; padding: 0 18px; gap: 14px; }
+
+      /* Hero */
+      .hero { min-height: auto; }
+      .hero-slides { min-height: 560px; }
+      .hero-slide {
+        flex-direction: column-reverse;
+        padding: 36px 20px 72px;
+        gap: 32px;
+        align-items: center;
+      }
+      .hero-content { text-align: center; }
+      .hero p { max-width: 100%; margin-left: auto; margin-right: auto; }
+      .hero-btns { justify-content: center; }
       .hero-visual { flex: none; }
-      .hero-frame { width: 280px; height: 280px; }
-      .about-inner { flex-direction: column; gap: 48px; }
-      .about-vis { flex: none; }
+      .hero-frame { width: 240px; height: 240px; }
+
+      /* About */
+      .about-inner { flex-direction: column; gap: 48px; text-align: center; }
+      .about-vis { flex: none; width: 100%; }
+      .about-stats { justify-content: center; }
+
+      /* Footer */
       .footer-inner { flex-direction: column; align-items: center; }
       footer p { text-align: center; }
     }
-    @media (max-width: 560px) {
-      .prod-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* Mobile */
+    @media (max-width: 640px) {
+      /* Announcement bar — solo código en mobile */
+      .ann-ticker { display: none; }
+      .ann-code {
+        flex: 1;
+        border-right: none;
+        justify-content: center;
+        font-size: 11.5px;
+      }
+
+      /* Header */
+      .header-inner { height: 56px; padding: 0 14px; gap: 10px; }
+      .site-logo img { height: 40px; }
+      /* Ocultar iconos de redes en mobile, solo mostrar carrito */
+      .ha-icon { display: none; }
+      .ha-cart { display: flex; }
+
+      /* Hero */
+      .hero-slides { min-height: 520px; }
+      .hero-slide { padding: 28px 16px 68px; gap: 24px; }
+      .hero-badge { font-size: 9.5px; padding: 5px 12px; }
+      .hero h1 { font-size: clamp(24px, 8vw, 36px); }
+      .hero p { font-size: 14px; }
+      .btn-primary, .btn-outline { padding: 12px 22px; font-size: 12px; }
+      .hero-frame { width: 200px; height: 200px; }
+      .hero-dots { bottom: 18px; }
+
+      /* Features bar — scroll horizontal */
+      .feat-inner {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        justify-content: flex-start;
+        padding: 14px 16px;
+        gap: 20px;
+      }
+      .feat-inner::-webkit-scrollbar { display: none; }
+      .feat { flex-shrink: 0; }
+
+      /* Section */
+      .sec { padding: 48px 0; }
+      .wrap { padding: 0 14px; }
+      .sec-hd { margin-bottom: 32px; }
+      .sec-title { font-size: clamp(20px, 6vw, 28px); }
+
+      /* Chips — scroll horizontal sin wrap */
+      .chips {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        justify-content: flex-start;
+        padding: 0 14px 4px;
+        margin-left: -14px;
+        margin-right: -14px;
+        margin-bottom: 28px;
+      }
+      .chips::-webkit-scrollbar { display: none; }
+      .chip { flex-shrink: 0; padding: 8px 18px; font-size: 11px; }
+
+      /* Product grid */
+      .prod-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .prod-body { padding: 12px; gap: 5px; }
+      .prod-name { font-size: 12px; }
+      .prod-desc { font-size: 11.5px; }
+      .prod-price { font-size: 16px; }
+      .add-btn { padding: 9px 12px; font-size: 10.5px; }
+
+      /* Promo */
+      .promo-bg { padding: 40px 14px; }
+      .promo-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+      .promo-card { padding: 22px 14px; }
+      .promo-num { font-size: 40px; }
+
+      /* About */
+      .about-bg { padding: 56px 14px; }
+      .about-emblem { width: 220px; height: 220px; }
+      .about-emblem-logo { width: 90px; }
+      .about-txt h2 { font-size: clamp(22px, 7vw, 32px); }
+      .about-txt p { font-size: 14px; }
+      .about-stats { gap: 24px; }
+      .stat-num { font-size: 28px; }
+
+      /* Contact */
+      .contact-bg { padding: 48px 14px; }
+      .contact-inner { grid-template-columns: 1fr; gap: 32px; }
+
+      /* Footer */
+      footer { padding: 24px 14px; }
+      .footer-logo-mm { font-size: 18px; }
+
+      /* WhatsApp FAB */
+      .wa-fab { bottom: 18px; right: 16px; width: 50px; height: 50px; }
+      .wa-fab svg { width: 26px; height: 26px; }
     }
+
     @media (max-width: 380px) {
       .prod-grid { grid-template-columns: 1fr; }
+      .promo-grid { grid-template-columns: 1fr; }
+      .hero-frame { width: 170px; height: 170px; }
     }
   </style>
 </head>
@@ -1079,6 +1277,11 @@
       </ul>
     </nav>
 
+    <!-- Hamburger (mobile only) -->
+    <button class="mob-menu-btn" id="mobMenuBtn" aria-label="Menú">
+      <span></span><span></span><span></span>
+    </button>
+
     <div class="header-actions">
       <!-- Instagram -->
       <a href="https://instagram.com/milan.materia" target="_blank" class="ha-icon" title="@milan.materia en Instagram">
@@ -1104,6 +1307,22 @@
     </div>
   </div>
 </header>
+
+<!-- MOBILE NAV -->
+<nav class="mob-nav" id="mobNav" aria-label="Menú mobile">
+  <a href="#mates"      onclick="closeMobNav()">Mates</a>
+  <a href="#imperiales" onclick="closeMobNav()">Imperiales</a>
+  <a href="#torpedos"   onclick="closeMobNav()">Torpedos</a>
+  <a href="#algarrobo"  onclick="closeMobNav()">Algarrobo</a>
+  <a href="#acero"      onclick="closeMobNav()">Acero Inox</a>
+  <a href="#bombillas"  onclick="closeMobNav()">Bombillas</a>
+  <a href="#yerbas"     onclick="closeMobNav()">Yerbas</a>
+  <a href="#contacto"   onclick="closeMobNav()">Contacto</a>
+  <div class="mob-nav-socials">
+    <a href="https://instagram.com/milan.materia" target="_blank">@milan.materia</a>
+    <a href="https://wa.me/5492236667793" target="_blank">WhatsApp</a>
+  </div>
+</nav>
 
 <!-- ─── HERO ─────────────────────────────────────────── -->
 <section class="hero" aria-label="Destacados">
@@ -1896,6 +2115,22 @@
 </a>
 
 <script>
+// ── MOBILE MENU ───────────────────────────────────────────
+const mobMenuBtn = document.getElementById('mobMenuBtn');
+const mobNav     = document.getElementById('mobNav');
+
+mobMenuBtn.addEventListener('click', () => {
+  const isOpen = mobNav.classList.toggle('open');
+  mobMenuBtn.classList.toggle('open', isOpen);
+  document.body.style.overflow = isOpen ? 'hidden' : '';
+});
+
+function closeMobNav() {
+  mobNav.classList.remove('open');
+  mobMenuBtn.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
 // ── HERO SLIDER ──────────────────────────────────────────
 let cur = 0;
 const slides = document.querySelectorAll('.hero-slide');
