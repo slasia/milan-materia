@@ -90,7 +90,9 @@
       justify-content: center;
       flex-wrap: nowrap;
       padding: 0 16px;
+      white-space: nowrap;
     }
+    .ann-track span { white-space: nowrap; }
     .ann-sep { color: var(--gold-dark); }
 
     /* ===== HEADER ===== */
@@ -1307,14 +1309,8 @@
 
     /* Mobile */
     @media (max-width: 640px) {
-      /* Announcement bar — solo código en mobile */
-      .ann-ticker { display: none; }
-      .ann-code {
-        flex: 1;
-        border-right: none;
-        justify-content: center;
-        font-size: 11.5px;
-      }
+      /* Announcement bar — mostrar ticker en mobile también */
+      .ann-ticker { display: flex; }
 
       /* Header */
       .header-inner { height: 56px; padding: 0 14px; gap: 10px; }
@@ -1414,9 +1410,6 @@
 
 <!-- ANNOUNCEMENT BAR -->
 <div class="ann-bar" aria-label="Promociones">
-  <div class="ann-code">
-    🎁 Usá el código <strong>912</strong> y obtenés el 31% OFF
-  </div>
   <div class="ann-ticker">
     <div class="ann-track">
       <span>🔥 20% OFF con efectivo o transferencia</span>
