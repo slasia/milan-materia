@@ -2403,16 +2403,8 @@ document.querySelectorAll('nav a').forEach(a => {
 });
 
 // ── PRODUCT DETAIL MODAL ──────────────────────────────────
-const modalOverlay = document.getElementById('prodModalOverlay');
-const modalImg     = document.getElementById('modalImg');
-const modalBadge   = document.getElementById('modalBadge');
-const modalName    = document.getElementById('modalName');
-const modalDesc    = document.getElementById('modalDesc');
-const modalPrice   = document.getElementById('modalPrice');
-const modalCuotas  = document.getElementById('modalCuotas');
-const modalWaLink  = document.getElementById('modalWaLink');
-
 function openProductModal(card) {
+  const overlay = document.getElementById('prodModalOverlay');
   const img     = card.querySelector('.prod-img-wrap img');
   const badge   = card.querySelector('.badge');
   const name    = card.querySelector('.prod-name');
@@ -2420,24 +2412,25 @@ function openProductModal(card) {
   const price   = card.querySelector('.prod-price');
   const cuotas  = card.querySelector('.prod-cuotas');
 
-  modalImg.src = img ? img.src : '';
-  modalImg.alt = img ? img.alt : '';
-  modalBadge.textContent  = badge  ? badge.textContent  : '';
-  modalBadge.style.display = badge ? 'inline-block' : 'none';
-  modalName.textContent   = name  ? name.textContent   : '';
-  modalDesc.textContent   = desc  ? desc.textContent   : '';
-  modalPrice.textContent  = price ? price.textContent  : '';
-  modalCuotas.textContent = cuotas? cuotas.textContent : '';
+  document.getElementById('modalImg').src           = img    ? img.src         : '';
+  document.getElementById('modalImg').alt           = img    ? img.alt         : '';
+  document.getElementById('modalBadge').textContent = badge  ? badge.textContent : '';
+  document.getElementById('modalBadge').style.display = badge ? 'inline-block' : 'none';
+  document.getElementById('modalName').textContent  = name   ? name.textContent  : '';
+  document.getElementById('modalDesc').textContent  = desc   ? desc.textContent  : '';
+  document.getElementById('modalPrice').textContent = price  ? price.textContent : '';
+  document.getElementById('modalCuotas').textContent= cuotas ? cuotas.textContent: '';
 
   const waText = encodeURIComponent('Hola! Me interesa el mate ' + (name ? name.textContent : '') + '. ¿Podés darme más info?');
-  modalWaLink.href = 'https://wa.me/5492236667793?text=' + waText;
+  document.getElementById('modalWaLink').href = 'https://wa.me/5492236667793?text=' + waText;
 
-  modalOverlay.classList.add('open');
+  overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
 }
 
 function closeProductModal() {
-  modalOverlay.classList.remove('open');
+  const overlay = document.getElementById('prodModalOverlay');
+  overlay.classList.remove('open');
   document.body.style.overflow = '';
 }
 
@@ -2449,9 +2442,9 @@ document.querySelectorAll('.prod-card').forEach(card => {
   });
 });
 
-// Close on overlay click or close button
-modalOverlay.addEventListener('click', e => {
-  if (e.target === modalOverlay) closeProductModal();
+// Close on overlay backdrop click
+document.addEventListener('click', e => {
+  if (e.target.id === 'prodModalOverlay') closeProductModal();
 });
 
 // Close on Escape
