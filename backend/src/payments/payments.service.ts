@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { PromotionsService } from '../promotions/promotions.service';
+import { MailService } from '../mail/mail.service';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import MercadoPagoConfig, { Preference, Payment } from 'mercadopago';
 
@@ -13,6 +14,7 @@ export class PaymentsService {
     private configService: ConfigService,
     private prisma: PrismaService,
     private promotionsService: PromotionsService,
+    private mail: MailService,
   ) {
     this.mpClient = new MercadoPagoConfig({
       accessToken: this.configService.get<string>('MP_ACCESS_TOKEN') || '',
@@ -119,6 +121,20 @@ export class PaymentsService {
       where: { id: order.id },
       data: { mpPreferenceId: preference.id },
     });
+
+    // Send notification email (non-blocking)
+    const fullOrder = await this.prisma.order.findUnique({
+      where: { id: order.id },
+      include: { items: { include: { product: { select: { name: true } } } } },
+    });
+    this.mail.sendNewOrder({
+      id: order.id,
+      total: order.total,
+      customerName,
+      customerEmail,
+      customerPhone,
+      items: fullOrder?.items ?? [],
+    }).catch(() => {/* fire-and-forget */});
 
     return {
       preferenceId: preference.id,

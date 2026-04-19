@@ -1,9 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private mail: MailService) {}
 
   async findOne(id: number) {
     const order = await this.prisma.order.findUnique({
@@ -53,10 +54,21 @@ export class OrdersService {
   }
 
   async updateStatus(id: number, status: string) {
-    await this.findOne(id);
-    return this.prisma.order.update({
+    const existing = await this.findOne(id);
+    const updated = await this.prisma.order.update({
       where: { id },
       data: { status },
     });
+
+    // Notify admin of status change (fire-and-forget)
+    this.mail.sendStatusUpdate({
+      id: updated.id,
+      status: updated.status,
+      total: updated.total,
+      customerName: existing.customerName ?? undefined,
+      customerEmail: existing.customerEmail ?? undefined,
+    }).catch(() => {/* ignore mail errors */});
+
+    return updated;
   }
 }
