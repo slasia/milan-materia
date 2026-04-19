@@ -38,14 +38,19 @@ export class MailService {
     return '$ ' + Math.round(cents / 100).toLocaleString('es-AR');
   }
 
-  private async send(subject: string, html: string) {
-    if (!this.transporter || !this.notifyTo) {
+  private async send(subject: string, html: string, to?: string) {
+    if (!this.transporter) {
       this.logger.debug(`Email skipped (not configured): ${subject}`);
       return;
     }
+    const recipient = to || this.notifyTo;
+    if (!recipient) {
+      this.logger.debug(`Email skipped (no recipient): ${subject}`);
+      return;
+    }
     try {
-      await this.transporter.sendMail({ from: this.from, to: this.notifyTo, subject, html });
-      this.logger.log(`Email sent → ${this.notifyTo}: ${subject}`);
+      await this.transporter.sendMail({ from: this.from, to: recipient, subject, html });
+      this.logger.log(`Email sent → ${recipient}: ${subject}`);
     } catch (err) {
       this.logger.error(`Email failed: ${err.message}`);
     }
@@ -195,6 +200,118 @@ export class MailService {
     `;
 
     await this.send(`📦 Pedido #${order.id} → ${label}`, html);
+  }
+
+  // ── Customer status update ───────────────────────────────────────────────
+  async sendCustomerStatusUpdate(order: {
+    id: number;
+    status: string;
+    total: number;
+    customerName?: string;
+    customerEmail: string;
+    trackingNumber?: string;
+    adminNotes?: string;
+    items: { name: string; quantity: number; unitPrice: number }[];
+  }) {
+    const STATUS_LABELS: Record<string, string> = {
+      pending: 'Pendiente',
+      paid: 'Pago confirmado',
+      processing: 'En preparación',
+      shipped: 'Enviado',
+      delivered: 'Entregado',
+      cancelled: 'Cancelado',
+    };
+
+    const STATUS_COLORS: Record<string, string> = {
+      paid: '#4bb98c',
+      pending: '#c8a96a',
+      processing: '#64a0dc',
+      shipped: '#e8cb8a',
+      delivered: '#4bb98c',
+      cancelled: '#d94f38',
+    };
+
+    const label = STATUS_LABELS[order.status] || order.status;
+    const color = STATUS_COLORS[order.status] || '#9a8870';
+
+    const itemRows = order.items
+      .map(
+        (i) =>
+          `<tr>
+            <td style="padding:6px 12px;border-bottom:1px solid #2a2318;">${i.name}</td>
+            <td style="padding:6px 12px;border-bottom:1px solid #2a2318;text-align:center;">${i.quantity}</td>
+            <td style="padding:6px 12px;border-bottom:1px solid #2a2318;text-align:right;color:#c8a96a;">${this.fmt(i.unitPrice * i.quantity)}</td>
+          </tr>`,
+      )
+      .join('');
+
+    const trackingBlock = order.trackingNumber
+      ? `<div style="background:#0a0804;border:1px solid #2a2318;border-radius:8px;padding:14px 18px;margin-bottom:20px;">
+           <p style="margin:0 0 4px;font-size:11px;color:#9a8870;letter-spacing:.1em;text-transform:uppercase;">Número de seguimiento</p>
+           <p style="margin:0;font-size:18px;font-family:monospace;color:#c8a96a;font-weight:700;">${order.trackingNumber}</p>
+         </div>`
+      : '';
+
+    const notesBlock = order.adminNotes
+      ? `<div style="background:#0a0804;border:1px solid #2a2318;border-radius:8px;padding:14px 18px;margin-bottom:20px;">
+           <p style="margin:0 0 6px;font-size:11px;color:#9a8870;letter-spacing:.1em;text-transform:uppercase;">Mensaje del vendedor</p>
+           <p style="margin:0;font-size:14px;color:#fff;line-height:1.5;">${order.adminNotes}</p>
+         </div>`
+      : '';
+
+    const greeting = order.customerName
+      ? `<p style="font-size:15px;color:#9a8870;margin:0 0 20px;">Hola <strong style="color:#fff;">${order.customerName}</strong>, te informamos que tu pedido fue actualizado.</p>`
+      : `<p style="font-size:15px;color:#9a8870;margin:0 0 20px;">Tu pedido fue actualizado.</p>`;
+
+    const html = `
+      ${this.baseStyle()}
+      <div class="wrap">
+        <div class="header">
+          <span class="logo">MM</span>
+          <p class="sub">MILÁN MATERÍA</p>
+        </div>
+        <div class="body">
+          <h2 style="color:#c8a96a;margin:0 0 8px;">Pedido <span style="font-family:monospace;">#${String(order.id).padStart(6, '0')}</span></h2>
+          ${greeting}
+
+          <div style="text-align:center;margin-bottom:24px;">
+            <span style="display:inline-block;padding:10px 28px;border-radius:24px;background:${color}22;border:1px solid ${color}55;color:${color};font-size:16px;font-weight:700;letter-spacing:.06em;">
+              ${label}
+            </span>
+          </div>
+
+          ${trackingBlock}
+          ${notesBlock}
+
+          <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:20px;">
+            <thead>
+              <tr style="background:#1a1510;">
+                <th style="padding:8px 12px;text-align:left;font-size:11px;color:#9a8870;letter-spacing:.08em;">PRODUCTO</th>
+                <th style="padding:8px 12px;text-align:center;font-size:11px;color:#9a8870;letter-spacing:.08em;">CANT.</th>
+                <th style="padding:8px 12px;text-align:right;font-size:11px;color:#9a8870;letter-spacing:.08em;">SUBTOTAL</th>
+              </tr>
+            </thead>
+            <tbody>${itemRows}</tbody>
+          </table>
+
+          <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:24px;">
+            <tr>
+              <td colspan="2" style="padding-top:12px;border-top:1px solid #2a2318;"></td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0;font-size:15px;font-weight:700;">Total</td>
+              <td style="padding:6px 0;text-align:right;font-size:18px;font-weight:700;color:#c8a96a;">${this.fmt(order.total)}</td>
+            </tr>
+          </table>
+
+          <p style="text-align:center;font-size:12px;color:#9a8870;margin:0 0 16px;">Podés seguir el estado de tu pedido iniciando sesión en nuestra tienda.</p>
+          <a href="${this.config.get<string>('FRONTEND_URL') || 'http://localhost:5174'}" class="btn">Ver mis pedidos</a>
+        </div>
+        ${this.footer()}
+      </div>
+    `;
+
+    await this.send(`📦 Tu pedido #${String(order.id).padStart(6, '0')} — ${label}`, html, order.customerEmail);
   }
 
   // ── Shared styles ────────────────────────────────────────────────────────

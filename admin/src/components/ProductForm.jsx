@@ -19,10 +19,11 @@ export default function ProductForm({ isOpen, onClose, product, categories, onSa
     name: '',
     description: '',
     price: '',
+    originalPrice: '',
     categoryId: '',
     badge: '',
     badgeType: '',
-    inStock: true,
+    stock: '0',
     featured: false,
   })
   const [file, setFile] = useState(null)
@@ -37,15 +38,16 @@ export default function ProductForm({ isOpen, onClose, product, categories, onSa
           name: product.name || '',
           description: product.description || '',
           price: product.price != null ? Math.round(product.price / 100).toString() : '',
+          originalPrice: product.originalPrice != null ? Math.round(product.originalPrice / 100).toString() : '',
           categoryId: product.categoryId?.toString() || product.category?.id?.toString() || '',
           badge: product.badge || '',
           badgeType: product.badgeType || '',
-          inStock: product.inStock ?? true,
+          stock: product.stock != null ? product.stock.toString() : '0',
           featured: product.featured ?? false,
         })
-        setPreview(imgUrl(product.imagePath || product.image))
+        setPreview(imgUrl(product.imagePath || product.imageUrl || product.image))
       } else {
-        setForm({ name: '', description: '', price: '', categoryId: '', badge: '', badgeType: '', inStock: true, featured: false })
+        setForm({ name: '', description: '', price: '', originalPrice: '', categoryId: '', badge: '', badgeType: '', stock: '0', featured: false })
         setPreview(null)
       }
       setFile(null)
@@ -83,12 +85,13 @@ export default function ProductForm({ isOpen, onClose, product, categories, onSa
     try {
       const payload = {
         name: form.name.trim(),
-        description: form.description.trim(),
+        description: form.description.trim() || null,
         price: Math.round(Number(form.price) * 100),
+        originalPrice: form.originalPrice ? Math.round(Number(form.originalPrice) * 100) : null,
         categoryId: Number(form.categoryId),
         badge: form.badge.trim() || null,
         badgeType: form.badgeType || null,
-        inStock: form.inStock,
+        stock: Math.max(0, parseInt(form.stock) || 0),
         featured: form.featured,
       }
 
@@ -157,6 +160,21 @@ export default function ProductForm({ isOpen, onClose, product, categories, onSa
             {errors.price && <div className="form-error">{errors.price}</div>}
           </div>
           <div className="form-group">
+            <label className="form-label">Precio original (tachado)</label>
+            <input
+              className="form-input"
+              type="number"
+              min="0"
+              step="1"
+              value={form.originalPrice}
+              onChange={e => set('originalPrice', e.target.value)}
+              placeholder="Opcional"
+            />
+          </div>
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
             <label className="form-label">Categoría *</label>
             <select
               className="form-select"
@@ -169,6 +187,18 @@ export default function ProductForm({ isOpen, onClose, product, categories, onSa
               ))}
             </select>
             {errors.categoryId && <div className="form-error">{errors.categoryId}</div>}
+          </div>
+          <div className="form-group">
+            <label className="form-label">Stock (unidades)</label>
+            <input
+              className="form-input"
+              type="number"
+              min="0"
+              step="1"
+              value={form.stock}
+              onChange={e => set('stock', e.target.value)}
+              placeholder="0"
+            />
           </div>
         </div>
 
@@ -197,14 +227,6 @@ export default function ProductForm({ isOpen, onClose, product, categories, onSa
         </div>
 
         <div className="form-row" style={{ marginBottom: 18 }}>
-          <label className="form-check">
-            <input
-              type="checkbox"
-              checked={form.inStock}
-              onChange={e => set('inStock', e.target.checked)}
-            />
-            En stock
-          </label>
           <label className="form-check">
             <input
               type="checkbox"

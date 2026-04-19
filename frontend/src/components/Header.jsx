@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useCart } from '../store/cart';
+import { useAuth } from '../store/auth';
 import MobileNav from './MobileNav';
+import AuthModal from './AuthModal';
 
 const IGIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -22,9 +24,21 @@ const CartIcon = () => (
   </svg>
 );
 
-export default function Header({ onCartOpen }) {
+const UserIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+    <circle cx="12" cy="7" r="4"/>
+  </svg>
+);
+
+export default function Header({ onCartOpen, onMyOrders }) {
   const [mobOpen, setMobOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const count = useCart(s => s.count());
+  const customer = useAuth(s => s.customer);
+  const logout = useAuth(s => s.logout);
+  const isLoggedIn = useAuth(s => s.isLoggedIn());
 
   const toggleMob = () => {
     setMobOpen(o => {
@@ -37,6 +51,13 @@ export default function Header({ onCartOpen }) {
     setMobOpen(false);
     document.body.style.overflow = '';
   };
+
+  const handleLogout = () => {
+    logout();
+    setUserMenuOpen(false);
+  };
+
+  const firstName = customer?.name?.split(' ')[0] || 'Mi cuenta';
 
   return (
     <>
@@ -102,6 +123,47 @@ export default function Header({ onCartOpen }) {
             >
               <WAIcon />
             </a>
+
+            {/* User auth area */}
+            {isLoggedIn ? (
+              <div className="ha-user-wrap">
+                <button
+                  className="ha-user-btn"
+                  onClick={() => setUserMenuOpen(o => !o)}
+                  title="Mi cuenta"
+                >
+                  <UserIcon />
+                  <span className="ha-user-name">{firstName}</span>
+                </button>
+                {userMenuOpen && (
+                  <>
+                    <div className="ha-user-menu-backdrop" onClick={() => setUserMenuOpen(false)} />
+                    <div className="ha-user-menu">
+                      <div className="ha-user-menu-email">{customer?.email}</div>
+                      <button
+                        className="ha-user-menu-item"
+                        onClick={() => { setUserMenuOpen(false); onMyOrders?.(); }}
+                      >
+                        Mis pedidos
+                      </button>
+                      <button className="ha-user-menu-item ha-user-logout" onClick={handleLogout}>
+                        Cerrar sesión
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <button
+                className="ha-login-btn"
+                onClick={() => setAuthOpen(true)}
+                title="Iniciar sesión"
+              >
+                <UserIcon />
+                <span>Ingresar</span>
+              </button>
+            )}
+
             <button
               className="ha-cart"
               onClick={onCartOpen}
@@ -118,6 +180,11 @@ export default function Header({ onCartOpen }) {
       </header>
 
       <MobileNav open={mobOpen} onClose={closeMob} />
+
+      <AuthModal
+        open={authOpen}
+        onClose={() => setAuthOpen(false)}
+      />
     </>
   );
 }

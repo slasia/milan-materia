@@ -70,7 +70,7 @@ function OrderDetailModal({ orderId, onClose }) {
             <div className="order-detail-grid">
               <div className="order-detail-field">
                 <label>ID</label>
-                <span style={{ fontFamily: 'monospace' }}>#{order.id?.toString().slice(-8).toUpperCase()}</span>
+                <span style={{ fontFamily: 'monospace' }}>#{String(order.id).padStart(6, '0')}</span>
               </div>
               <div className="order-detail-field">
                 <label>Estado</label>
@@ -79,13 +79,39 @@ function OrderDetailModal({ orderId, onClose }) {
                 </span>
               </div>
               <div className="order-detail-field">
-                <label>Fecha</label>
+                <label>Fecha y hora</label>
                 <span>{order.createdAt ? fmtDate(order.createdAt) : '—'}</span>
               </div>
               <div className="order-detail-field">
-                <label>Total</label>
-                <span style={{ color: 'var(--gold)', fontWeight: 600 }}>{fmt(order.total || 0)}</span>
+                <label>Última actualización</label>
+                <span style={{ fontSize: 12 }}>{order.updatedAt ? fmtDate(order.updatedAt) : '—'}</span>
               </div>
+              <div className="order-detail-field">
+                <label>Subtotal</label>
+                <span>{fmt(order.subtotal || 0)}</span>
+              </div>
+              {order.discountAmt > 0 && (
+                <div className="order-detail-field">
+                  <label>Descuento {order.promoCode ? `(${order.promoCode})` : ''}</label>
+                  <span style={{ color: '#4ade80' }}>− {fmt(order.discountAmt)}</span>
+                </div>
+              )}
+              <div className="order-detail-field">
+                <label>Total</label>
+                <span style={{ color: 'var(--gold)', fontWeight: 600, fontSize: 16 }}>{fmt(order.total || 0)}</span>
+              </div>
+              {order.paymentMethod && (
+                <div className="order-detail-field">
+                  <label>Método de pago</label>
+                  <span style={{ textTransform: 'capitalize' }}>{order.paymentMethod.replace(/_/g, ' ')}</span>
+                </div>
+              )}
+              {order.mpPaymentId && (
+                <div className="order-detail-field">
+                  <label>ID MercadoPago</label>
+                  <span style={{ fontFamily: 'monospace', fontSize: 12 }}>{order.mpPaymentId}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -93,17 +119,23 @@ function OrderDetailModal({ orderId, onClose }) {
             <div className="order-detail-section-title">Cliente</div>
             <div className="order-detail-grid">
               <div className="order-detail-field">
-                <label>Email</label>
-                <span>{order.customerEmail || order.email || '—'}</span>
+                <label>Nombre</label>
+                <span>{order.customerName || order.customer?.name || '—'}</span>
               </div>
               <div className="order-detail-field">
-                <label>Nombre</label>
-                <span>{order.customerName || order.name || '—'}</span>
+                <label>Email</label>
+                <span>{order.customerEmail || order.customer?.email || '—'}</span>
               </div>
               <div className="order-detail-field">
                 <label>Teléfono</label>
-                <span>{order.customerPhone || order.phone || '—'}</span>
+                <span>{order.customerPhone || order.customer?.phone || '—'}</span>
               </div>
+              {order.customer?.id && (
+                <div className="order-detail-field">
+                  <label>Cuenta registrada</label>
+                  <span style={{ color: 'var(--gold)', fontSize: 12 }}>Cliente #{order.customer.id}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -121,6 +153,30 @@ function OrderDetailModal({ orderId, onClose }) {
                   return '—'
                 })()}
               </div>
+            </div>
+          )}
+
+          {(order.notes || order.adminNotes || order.trackingNumber) && (
+            <div className="order-detail-section">
+              <div className="order-detail-section-title">Seguimiento y notas</div>
+              {order.trackingNumber && (
+                <div className="order-detail-field" style={{ marginBottom: 10 }}>
+                  <label>Número de seguimiento</label>
+                  <span style={{ fontFamily: 'monospace', color: 'var(--gold)', fontWeight: 700 }}>{order.trackingNumber}</span>
+                </div>
+              )}
+              {order.adminNotes && (
+                <div className="order-detail-field" style={{ marginBottom: 10 }}>
+                  <label>Notas para el cliente</label>
+                  <span style={{ fontSize: 13, lineHeight: 1.5 }}>{order.adminNotes}</span>
+                </div>
+              )}
+              {order.notes && (
+                <div className="order-detail-field">
+                  <label>Notas del comprador</label>
+                  <span style={{ fontSize: 13, lineHeight: 1.5 }}>{order.notes}</span>
+                </div>
+              )}
             </div>
           )}
 
@@ -152,13 +208,102 @@ function OrderDetailModal({ orderId, onClose }) {
   )
 }
 
+function EditIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4l5 5L6 19l-5 1 1-5L11 4z"/>
+    </svg>
+  )
+}
+
+function UpdateOrderModal({ order, onClose, onUpdated }) {
+  const { showToast } = useToast()
+  const [status, setStatus] = useState(order.status)
+  const [tracking, setTracking] = useState(order.trackingNumber || '')
+  const [notes, setNotes] = useState(order.adminNotes || '')
+  const [saving, setSaving] = useState(false)
+
+  async function handleSave() {
+    setSaving(true)
+    try {
+      await updateOrderStatus(order.id, { status, trackingNumber: tracking, adminNotes: notes })
+      showToast('Pedido actualizado', 'success')
+      onUpdated({ status, trackingNumber: tracking, adminNotes: notes })
+      onClose()
+    } catch (e) {
+      showToast(e.message || 'Error al actualizar', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Modal isOpen onClose={onClose} title={`Actualizar pedido #${String(order.id).padStart(6, '0')}`}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <div>
+          <label style={{ display: 'block', fontSize: 11, color: 'var(--muted)', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 6 }}>
+            Estado
+          </label>
+          <select
+            className="status-select"
+            value={status}
+            onChange={e => setStatus(e.target.value)}
+            style={{ width: '100%' }}
+          >
+            {STATUS_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label style={{ display: 'block', fontSize: 11, color: 'var(--muted)', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 6 }}>
+            Número de seguimiento
+          </label>
+          <input
+            type="text"
+            className="form-input"
+            placeholder="Ej: AR123456789"
+            value={tracking}
+            onChange={e => setTracking(e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label style={{ display: 'block', fontSize: 11, color: 'var(--muted)', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 6 }}>
+            Notas para el cliente
+          </label>
+          <textarea
+            className="form-input"
+            placeholder="Ej: Tu pedido está listo para despacho, coordinaremos la entrega esta tarde."
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            rows={3}
+            style={{ resize: 'vertical' }}
+          />
+          <p style={{ fontSize: 11, color: 'var(--muted)', margin: '4px 0 0' }}>
+            Este mensaje se incluye en el email de notificación al cliente.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={saving}>Cancelar</button>
+          <button className="btn btn-primary btn-sm" onClick={handleSave} disabled={saving}>
+            {saving ? 'Guardando...' : 'Guardar y notificar'}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
 export default function Orders() {
   const { showToast } = useToast()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [viewingOrderId, setViewingOrderId] = useState(null)
-  const [updatingId, setUpdatingId] = useState(null)
+  const [editingOrder, setEditingOrder] = useState(null)
 
   async function load() {
     try {
@@ -173,17 +318,8 @@ export default function Orders() {
 
   useEffect(() => { load() }, [])
 
-  async function handleStatusChange(orderId, newStatus) {
-    setUpdatingId(orderId)
-    try {
-      await updateOrderStatus(orderId, newStatus)
-      showToast('Estado actualizado', 'success')
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o))
-    } catch (e) {
-      showToast(e.message || 'Error al actualizar estado', 'error')
-    } finally {
-      setUpdatingId(null)
-    }
+  function handleUpdated(orderId, changes) {
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, ...changes } : o))
   }
 
   if (loading) return <div className="loading-wrap"><div className="spinner" /></div>
@@ -219,11 +355,10 @@ export default function Orders() {
               <thead>
                 <tr>
                   <th>ID</th>
-                  <th>Email</th>
+                  <th>Cliente</th>
                   <th>Total</th>
                   <th>Estado</th>
-                  <th>Fecha</th>
-                  <th>Cambiar estado</th>
+                  <th>Fecha y hora</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
@@ -236,7 +371,10 @@ export default function Orders() {
                     >
                       #{order.id?.toString().slice(-6).toUpperCase()}
                     </td>
-                    <td>{order.customerEmail || order.email || '—'}</td>
+                    <td>
+                      <div style={{ fontWeight: 600, fontSize: 13 }}>{order.customerName || order.customer?.name || '—'}</div>
+                      <div style={{ fontSize: 11, color: 'var(--muted)' }}>{order.customerEmail || order.customer?.email || ''}</div>
+                    </td>
                     <td style={{ color: 'var(--gold)', fontWeight: 600 }}>
                       {fmt(order.total || 0)}
                     </td>
@@ -245,27 +383,26 @@ export default function Orders() {
                         {STATUS_LABELS[order.status] || order.status}
                       </span>
                     </td>
-                    <td className="td-muted">{order.createdAt ? fmtDate(order.createdAt) : '—'}</td>
-                    <td>
-                      <select
-                        className="status-select"
-                        value={order.status}
-                        disabled={updatingId === order.id}
-                        onChange={e => handleStatusChange(order.id, e.target.value)}
-                      >
-                        {STATUS_OPTIONS.map(opt => (
-                          <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                      </select>
+                    <td className="td-muted">
+                      {order.createdAt ? fmtDate(order.createdAt) : '—'}
                     </td>
                     <td>
-                      <button
-                        className="btn btn-ghost btn-sm btn-icon"
-                        title="Ver detalle"
-                        onClick={() => setViewingOrderId(order.id)}
-                      >
-                        <EyeIcon />
-                      </button>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button
+                          className="btn btn-ghost btn-sm btn-icon"
+                          title="Ver detalle"
+                          onClick={() => setViewingOrderId(order.id)}
+                        >
+                          <EyeIcon />
+                        </button>
+                        <button
+                          className="btn btn-ghost btn-sm btn-icon"
+                          title="Actualizar pedido"
+                          onClick={() => setEditingOrder(order)}
+                        >
+                          <EditIcon />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -279,6 +416,14 @@ export default function Orders() {
         orderId={viewingOrderId}
         onClose={() => setViewingOrderId(null)}
       />
+
+      {editingOrder && (
+        <UpdateOrderModal
+          order={editingOrder}
+          onClose={() => setEditingOrder(null)}
+          onUpdated={(changes) => { handleUpdated(editingOrder.id, changes); }}
+        />
+      )}
     </>
   )
 }

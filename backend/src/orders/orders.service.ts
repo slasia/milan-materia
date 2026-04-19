@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
 @Injectable()
 export class OrdersService {
@@ -10,6 +11,9 @@ export class OrdersService {
     const order = await this.prisma.order.findUnique({
       where: { id },
       include: {
+        customer: {
+          select: { id: true, email: true, name: true, phone: true, city: true, province: true },
+        },
         items: {
           include: {
             product: {
@@ -34,6 +38,9 @@ export class OrdersService {
       this.prisma.order.findMany({
         where,
         include: {
+          customer: {
+            select: { id: true, email: true, name: true, phone: true },
+          },
           items: {
             include: {
               product: { select: { id: true, name: true } },
@@ -53,21 +60,47 @@ export class OrdersService {
     };
   }
 
-  async updateStatus(id: number, status: string) {
+  async updateStatus(id: number, dto: UpdateOrderStatusDto) {
     const existing = await this.findOne(id);
+
+    const updateData: any = { status: dto.status };
+    if (dto.trackingNumber !== undefined) updateData.trackingNumber = dto.trackingNumber;
+    if (dto.adminNotes !== undefined) updateData.adminNotes = dto.adminNotes;
+
     const updated = await this.prisma.order.update({
       where: { id },
-      data: { status },
+      data: updateData,
     });
+
+    const customerEmail = existing.customerEmail ?? existing.customer?.email;
+    const customerName  = existing.customerName  ?? existing.customer?.name;
 
     // Notify admin of status change (fire-and-forget)
     this.mail.sendStatusUpdate({
       id: updated.id,
       status: updated.status,
       total: updated.total,
-      customerName: existing.customerName ?? undefined,
-      customerEmail: existing.customerEmail ?? undefined,
+      customerName: customerName ?? undefined,
+      customerEmail: customerEmail ?? undefined,
     }).catch(() => {/* ignore mail errors */});
+
+    // Notify customer if they have an email (fire-and-forget)
+    if (customerEmail) {
+      this.mail.sendCustomerStatusUpdate({
+        id: updated.id,
+        status: updated.status,
+        total: updated.total,
+        customerName: customerName ?? undefined,
+        customerEmail,
+        trackingNumber: (updated as any).trackingNumber ?? undefined,
+        adminNotes: (updated as any).adminNotes ?? undefined,
+        items: existing.items.map(i => ({
+          name: i.product?.name ?? 'Producto',
+          quantity: i.quantity,
+          unitPrice: i.unitPrice,
+        })),
+      }).catch(() => {/* ignore mail errors */});
+    }
 
     return updated;
   }

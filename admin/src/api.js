@@ -47,11 +47,24 @@ export const getPromotions = () => req('/admin/promotions')
 export const createPromotion = (data) => req('/admin/promotions', { method: 'POST', body: JSON.stringify(data) })
 export const updatePromotion = (id, data) => req('/admin/promotions/' + id, { method: 'PATCH', body: JSON.stringify(data) })
 export const deletePromotion = (id) => req('/admin/promotions/' + id, { method: 'DELETE' })
+export const getCustomers = (params = {}) => {
+  const qs = new URLSearchParams()
+  if (params.page)   qs.set('page',   params.page)
+  if (params.search) qs.set('search', params.search)
+  return req('/admin/customers' + (qs.toString() ? '?' + qs : ''))
+}
+export const getCustomer = (id) => req('/admin/customers/' + id)
+
 export const getOrders = () => req('/admin/orders')
 export const getOrder = (id) => req('/admin/orders/' + id)
-export const updateOrderStatus = (id, status) =>
-  req('/admin/orders/' + id + '/status', { method: 'PATCH', body: JSON.stringify({ status }) })
+export const updateOrderStatus = (id, data) =>
+  req('/admin/orders/' + id + '/status', { method: 'PATCH', body: JSON.stringify(typeof data === 'string' ? { status: data } : data) })
 
 export const fmt = (cents) => '$\u202f' + Math.round(cents / 100).toLocaleString('es-AR')
-export const fmtDate = (d) => new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+export const fmtDate = (d) => {
+  const dt = new Date(d)
+  const date = dt.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  const time = dt.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+  return `${date} ${time}`
+}
 export const imgUrl = (path) => path ? `${API}/${path}` : null

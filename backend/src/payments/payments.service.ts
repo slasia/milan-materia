@@ -21,8 +21,22 @@ export class PaymentsService {
     });
   }
 
-  async createCheckoutSession(dto: CreateCheckoutDto) {
-    const { items, customerEmail, customerName, customerPhone, promoCode, shippingAddress, notes } = dto;
+  async createCheckoutSession(dto: CreateCheckoutDto, customerId?: number) {
+    let { items, customerEmail, customerName, customerPhone, promoCode, shippingAddress, notes } = dto;
+
+    // If the request comes from a logged-in customer, load their profile and auto-fill missing fields
+    if (customerId) {
+      const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
+      if (customer) {
+        customerEmail = customerEmail || customer.email;
+        customerName  = customerName  || customer.name;
+        customerPhone = customerPhone || customer.phone || undefined;
+        if (!shippingAddress && customer.address) {
+          shippingAddress = [customer.address, customer.city, customer.province, customer.zip, customer.country]
+            .filter(Boolean).join(', ');
+        }
+      }
+    }
 
     if (!items || items.length === 0) throw new BadRequestException('No items provided');
 
@@ -34,6 +48,16 @@ export class PaymentsService {
     if (products.length !== productIds.length) throw new BadRequestException('One or more products not found');
 
     const productMap = new Map(products.map((p) => [p.id, p]));
+
+    // Validate stock for every item before doing anything
+    for (const item of items) {
+      const product = productMap.get(item.productId);
+      if (product.stock < item.quantity) {
+        throw new BadRequestException(
+          `Stock insuficiente para "${product.name}". Disponible: ${product.stock}, solicitado: ${item.quantity}.`,
+        );
+      }
+    }
 
     let subtotal = 0;
     const orderItemsData = items.map((item) => {
@@ -58,6 +82,7 @@ export class PaymentsService {
     const order = await this.prisma.order.create({
       data: {
         status: 'pending',
+        customerId: customerId ?? null,
         customerEmail,
         customerName,
         customerPhone,
@@ -163,12 +188,28 @@ export class PaymentsService {
             paymentMethod: payment.payment_type_id || 'mercadopago',
           },
         });
-        // Increment promo usage
-        const order = await this.prisma.order.findUnique({ where: { id: orderId } });
-        if (order?.promotionId) {
-          await this.prisma.promotion.update({ where: { id: order.promotionId }, data: { usedCount: { increment: 1 } } });
+
+        // Decrement stock for every item in the order
+        const order = await this.prisma.order.findUnique({
+          where: { id: orderId },
+          include: { items: true },
+        });
+        if (order) {
+          for (const item of order.items) {
+            await this.prisma.product.update({
+              where: { id: item.productId },
+              data: { stock: { decrement: item.quantity } },
+            });
+          }
+          // Increment promo usage
+          if (order.promotionId) {
+            await this.prisma.promotion.update({
+              where: { id: order.promotionId },
+              data: { usedCount: { increment: 1 } },
+            });
+          }
         }
-        console.log(`Order #${orderId} marked as PAID via MercadoPago`);
+        console.log(`Order #${orderId} marked as PAID — stock decremented`);
       } else if (payment.status === 'rejected' || payment.status === 'cancelled') {
         await this.prisma.order.update({ where: { id: orderId }, data: { status: 'cancelled' } });
       }

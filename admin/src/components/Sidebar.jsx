@@ -31,6 +31,13 @@ const ClipboardIcon = () => (
   </svg>
 )
 
+const UsersIcon = () => (
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M13 11c2.21 0 4 1.79 4 4v1H3v-1c0-2.21 1.79-4 4-4h6z"/>
+    <circle cx="10" cy="6" r="3"/>
+  </svg>
+)
+
 const LogoutIcon = () => (
   <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
     <path d="M13 3h4a1 1 0 011 1v12a1 1 0 01-1 1h-4M9 14l4-4-4-4M13 10H3"/>
@@ -42,6 +49,7 @@ const navLinks = [
   { to: '/products', label: 'Productos', icon: <TagIcon /> },
   { to: '/promotions', label: 'Promociones', icon: <StarIcon /> },
   { to: '/orders', label: 'Pedidos', icon: <ClipboardIcon /> },
+  { to: '/customers', label: 'Clientes', icon: <UsersIcon /> },
 ]
 
 export default function Sidebar() {

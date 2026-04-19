@@ -182,8 +182,11 @@ export default function Products() {
                         {fmt(product.price || 0)}
                       </td>
                       <td>
-                        <span className={`badge ${product.inStock ? 'badge-green' : 'badge-red'}`}>
-                          {product.inStock ? 'En stock' : 'Sin stock'}
+                        <span
+                          className={`badge ${product.stock > 0 ? (product.stock <= 5 ? 'badge-gold' : 'badge-green') : 'badge-red'}`}
+                          title={`${product.stock ?? 0} unidades`}
+                        >
+                          {product.stock > 0 ? product.stock : 'Sin stock'}
                         </span>
                       </td>
                       <td>

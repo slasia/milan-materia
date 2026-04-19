@@ -10,14 +10,19 @@ import ContactSection from '../components/ContactSection';
 import Footer from '../components/Footer';
 import CartDrawer from '../components/CartDrawer';
 import WhatsAppFAB from '../components/WhatsAppFAB';
+import MyOrders from './MyOrders';
 
 export default function Home() {
   const [cartOpen, setCartOpen] = useState(false);
+  const [myOrdersOpen, setMyOrdersOpen] = useState(false);
 
   return (
     <>
       <AnnouncementBar />
-      <Header onCartOpen={() => setCartOpen(true)} />
+      <Header
+        onCartOpen={() => setCartOpen(true)}
+        onMyOrders={() => setMyOrdersOpen(true)}
+      />
       <HeroSlider />
       <FeaturesBar />
       <ProductSection />
@@ -27,6 +32,7 @@ export default function Home() {
       <Footer />
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
       <WhatsAppFAB />
+      {myOrdersOpen && <MyOrders onClose={() => setMyOrdersOpen(false)} />}
     </>
   );
 }

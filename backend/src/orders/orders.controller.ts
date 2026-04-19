@@ -47,6 +47,6 @@ export class OrdersController {
     @Param('id', ParseIntPipe) id: number,
     @Body() updateOrderStatusDto: UpdateOrderStatusDto,
   ) {
-    return this.ordersService.updateStatus(id, updateOrderStatusDto.status);
+    return this.ordersService.updateStatus(id, updateOrderStatusDto);
   }
 }

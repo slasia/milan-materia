@@ -1,26 +1,21 @@
 import { useEffect, useState } from 'react';
 import { getPromotions } from '../api';
 
-const FALLBACK = [
-  '🔥 20% OFF con efectivo o transferencia',
-  '💳 25% OFF + 3 cuotas sin interés',
-  '🚚 Envíos a todo el país',
-  '🧉 Mates 100% artesanales'
-];
-
 export default function AnnouncementBar() {
-  const [items, setItems] = useState(FALLBACK);
+  const [items, setItems] = useState([]);
 
   useEffect(() => {
     getPromotions()
       .then(data => {
         const ann = Array.isArray(data)
-          ? data.filter(p => p.type === 'announcement').map(p => p.text || p.title || p.message)
+          ? data.filter(p => p.type === 'announcement').map(p => p.title)
           : [];
-        if (ann.length > 0) setItems(ann);
+        setItems(ann);
       })
       .catch(() => {});
   }, []);
+
+  if (items.length === 0) return null;
 
   return (
     <div className="ann-bar" aria-label="Promociones">

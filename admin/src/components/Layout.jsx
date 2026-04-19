@@ -8,6 +8,7 @@ const PAGE_TITLES = {
   '/products': 'Productos',
   '/promotions': 'Promociones',
   '/orders': 'Pedidos',
+  '/customers': 'Clientes',
 }
 
 function useServerStatus() {
