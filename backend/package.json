@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "start:dev": "nest start --watch",
-    "start": "node dist/src/main",
+    "start": "node dist/main",
     "build": "nest build",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
