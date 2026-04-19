@@ -79,7 +79,9 @@ export default function ProductModal({ product, onClose }) {
 
         <div className="prod-modal-info-col">
           {product.category && (
-            <div className="prod-modal-badge">{product.category}</div>
+            <div className="prod-modal-badge">
+              {product.category?.name ?? (typeof product.category === 'string' ? product.category : '')}
+            </div>
           )}
           <div className="prod-modal-name">{product.name}</div>
           {product.description && (

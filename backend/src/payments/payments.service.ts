@@ -93,9 +93,9 @@ export class PaymentsService {
         items: mpItems,
         payer: customerEmail ? { email: customerEmail, name: customerName || undefined } : undefined,
         back_urls: {
-          success: `${frontendUrl}/frontend/success.html?order=${order.id}`,
-          failure: `${frontendUrl}/index.html?payment=failure`,
-          pending: `${frontendUrl}/frontend/success.html?order=${order.id}&status=pending`,
+          success: `${frontendUrl}/success?order=${order.id}`,
+          failure: `${frontendUrl}/?payment=failure`,
+          pending: `${frontendUrl}/success?order=${order.id}&status=pending`,
         },
         auto_return: 'approved',
         external_reference: String(order.id),

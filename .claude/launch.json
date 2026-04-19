@@ -21,6 +21,14 @@
       "cwd": "/Users/sebastianlasia/MilanMateria/frontend",
       "port": 5174,
       "autoPort": false
+    },
+    {
+      "name": "milan-materia-admin",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "/Users/sebastianlasia/MilanMateria/admin",
+      "port": 5175,
+      "autoPort": false
     }
   ]
 }

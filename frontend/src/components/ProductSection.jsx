@@ -41,7 +41,10 @@ export default function ProductSection() {
 
   const visible = activecat === 'todos'
     ? products
-    : products.filter(p => p.category === activecat);
+    : products.filter(p => {
+        const name = p.category?.name ?? (typeof p.category === 'string' ? p.category : '');
+        return name === activecat;
+      });
 
   const catNames = categories.map(c => (typeof c === 'string' ? c : c.name || c.slug || String(c)));
 

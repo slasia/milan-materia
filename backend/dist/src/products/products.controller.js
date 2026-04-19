@@ -30,7 +30,7 @@ let ProductsController = class ProductsController {
         if (category)
             filters.category = category;
         if (featured !== undefined)
-            filters.featured = featured === 'true';
+            filters.featured = featured === "true";
         return this.productsService.findAll(filters);
     }
     findOne(id) {
@@ -38,6 +38,9 @@ let ProductsController = class ProductsController {
     }
     create(createProductDto) {
         return this.productsService.create(createProductDto);
+    }
+    getAll() {
+        return this.productsService.findAll();
     }
     update(id, updateProductDto) {
         return this.productsService.update(id, updateProductDto);
@@ -52,23 +55,23 @@ let ProductsController = class ProductsController {
 };
 exports.ProductsController = ProductsController;
 __decorate([
-    (0, common_1.Get)('products'),
-    __param(0, (0, common_1.Query)('category')),
-    __param(1, (0, common_1.Query)('featured')),
+    (0, common_1.Get)("products"),
+    __param(0, (0, common_1.Query)("category")),
+    __param(1, (0, common_1.Query)("featured")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], ProductsController.prototype, "findAll", null);
 __decorate([
-    (0, common_1.Get)('products/:id'),
-    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    (0, common_1.Get)("products/:id"),
+    __param(0, (0, common_1.Param)("id", common_1.ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", void 0)
 ], ProductsController.prototype, "findOne", null);
 __decorate([
     (0, common_1.UseGuards)(auth_guard_1.JwtAuthGuard),
-    (0, common_1.Post)('admin/products'),
+    (0, common_1.Post)("admin/products"),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_product_dto_1.CreateProductDto]),
@@ -76,8 +79,15 @@ __decorate([
 ], ProductsController.prototype, "create", null);
 __decorate([
     (0, common_1.UseGuards)(auth_guard_1.JwtAuthGuard),
-    (0, common_1.Patch)('admin/products/:id'),
-    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    (0, common_1.Get)("admin/products"),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], ProductsController.prototype, "getAll", null);
+__decorate([
+    (0, common_1.UseGuards)(auth_guard_1.JwtAuthGuard),
+    (0, common_1.Patch)("admin/products/:id"),
+    __param(0, (0, common_1.Param)("id", common_1.ParseIntPipe)),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number, update_product_dto_1.UpdateProductDto]),
@@ -85,32 +95,32 @@ __decorate([
 ], ProductsController.prototype, "update", null);
 __decorate([
     (0, common_1.UseGuards)(auth_guard_1.JwtAuthGuard),
-    (0, common_1.Delete)('admin/products/:id'),
-    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    (0, common_1.Delete)("admin/products/:id"),
+    __param(0, (0, common_1.Param)("id", common_1.ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", void 0)
 ], ProductsController.prototype, "remove", null);
 __decorate([
     (0, common_1.UseGuards)(auth_guard_1.JwtAuthGuard),
-    (0, common_1.Post)('admin/products/:id/image'),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('image', {
+    (0, common_1.Post)("admin/products/:id/image"),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)("image", {
         storage: (0, multer_1.diskStorage)({
-            destination: './uploads/products',
+            destination: "./uploads/products",
             filename: (req, file, cb) => {
-                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+                const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
                 cb(null, `product-${uniqueSuffix}${(0, path_1.extname)(file.originalname)}`);
             },
         }),
         fileFilter: (req, file, cb) => {
             if (!file.mimetype.match(/\/(jpg|jpeg|png|gif|webp)$/)) {
-                return cb(new Error('Only image files are allowed'), false);
+                return cb(new Error("Only image files are allowed"), false);
             }
             cb(null, true);
         },
         limits: { fileSize: 5 * 1024 * 1024 },
     })),
-    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(0, (0, common_1.Param)("id", common_1.ParseIntPipe)),
     __param(1, (0, common_1.UploadedFile)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number, Object]),

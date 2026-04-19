@@ -48,6 +48,11 @@ export declare class DashboardService {
             mpPaymentId: string | null;
             paymentMethod: string | null;
         })[];
+        dailyRevenue: {
+            date: string;
+            revenue: number;
+            count: number;
+        }[];
         ordersByStatus: Record<string, number>;
     }>;
 }

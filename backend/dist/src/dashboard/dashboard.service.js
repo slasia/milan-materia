@@ -17,7 +17,11 @@ let DashboardService = class DashboardService {
         this.prisma = prisma;
     }
     async getDashboard() {
-        const [totalOrders, paidOrders, recentOrders, ordersByStatus, topProductsRaw, revenueAgg] = await Promise.all([
+        const now = new Date();
+        const since = new Date(now);
+        since.setDate(since.getDate() - 29);
+        since.setHours(0, 0, 0, 0);
+        const [totalOrders, paidOrders, recentOrders, ordersByStatus, topProductsRaw, revenueAgg, paidLast30] = await Promise.all([
             this.prisma.order.count(),
             this.prisma.order.count({ where: { status: 'paid' } }),
             this.prisma.order.findMany({
@@ -43,6 +47,10 @@ let DashboardService = class DashboardService {
                 _sum: { total: true },
                 where: { status: 'paid' },
             }),
+            this.prisma.order.findMany({
+                where: { status: 'paid', createdAt: { gte: since } },
+                select: { total: true, createdAt: true },
+            }),
         ]);
         const productIds = topProductsRaw.map((p) => p.productId);
         const topProductDetails = await this.prisma.product.findMany({
@@ -57,12 +65,33 @@ let DashboardService = class DashboardService {
                 totalRevenue: item._sum.total,
             };
         });
+        const revenueByDay = new Map();
+        for (let i = 0; i < 30; i++) {
+            const d = new Date(since);
+            d.setDate(d.getDate() + i);
+            const key = d.toISOString().slice(0, 10);
+            revenueByDay.set(key, { revenue: 0, count: 0 });
+        }
+        for (const order of paidLast30) {
+            const key = order.createdAt.toISOString().slice(0, 10);
+            if (revenueByDay.has(key)) {
+                const day = revenueByDay.get(key);
+                day.revenue += order.total;
+                day.count += 1;
+            }
+        }
+        const dailyRevenue = Array.from(revenueByDay.entries()).map(([date, vals]) => ({
+            date,
+            revenue: vals.revenue,
+            count: vals.count,
+        }));
         return {
             totalOrders,
             paidOrders,
             totalRevenue: revenueAgg._sum.total || 0,
             topProducts,
             recentOrders,
+            dailyRevenue,
             ordersByStatus: ordersByStatus.reduce((acc, item) => {
                 acc[item.status] = item._count.id;
                 return acc;
