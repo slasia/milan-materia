@@ -88,21 +88,32 @@ export class PaymentsService {
     });
 
     const preferenceClient = new Preference(this.mpClient);
-    const preference = await preferenceClient.create({
-      body: {
-        items: mpItems,
-        payer: customerEmail ? { email: customerEmail, name: customerName || undefined } : undefined,
-        back_urls: {
-          success: `${frontendUrl}/success?order=${order.id}`,
-          failure: `${frontendUrl}/?payment=failure`,
-          pending: `${frontendUrl}/success?order=${order.id}&status=pending`,
+    let preference: any;
+    try {
+      preference = await preferenceClient.create({
+        body: {
+          items: mpItems,
+          payer: customerEmail ? { email: customerEmail, name: customerName || undefined } : undefined,
+          back_urls: {
+            success: `${frontendUrl}/success?order=${order.id}`,
+            failure: `${frontendUrl}/?payment=failure`,
+            pending: `${frontendUrl}/success?order=${order.id}&status=pending`,
+          },
+          auto_return: 'approved',
+          external_reference: String(order.id),
+          notification_url: `${backendUrl}/payments/webhook`,
+          statement_descriptor: 'MILAN MATERIA',
         },
-        auto_return: 'approved',
-        external_reference: String(order.id),
-        notification_url: `${backendUrl}/payments/webhook`,
-        statement_descriptor: 'MILAN MATERIA',
-      },
-    });
+      });
+    } catch (mpError) {
+      // MercadoPago failed — cancel the order so it doesn't stay as pending
+      await this.prisma.order.update({
+        where: { id: order.id },
+        data: { status: 'cancelled' },
+      });
+      console.error(`Order #${order.id} cancelled: MercadoPago error — ${mpError.message}`);
+      throw new BadRequestException('No se pudo iniciar el pago con MercadoPago. Intente de nuevo.');
+    }
 
     await this.prisma.order.update({
       where: { id: order.id },
