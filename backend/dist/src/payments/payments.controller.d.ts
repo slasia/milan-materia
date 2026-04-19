@@ -4,9 +4,9 @@ export declare class PaymentsController {
     private paymentsService;
     constructor(paymentsService: PaymentsService);
     createCheckoutSession(dto: CreateCheckoutDto): Promise<{
-        preferenceId: string;
-        url: string;
-        sandboxUrl: string;
+        preferenceId: any;
+        url: any;
+        sandboxUrl: any;
         orderId: number;
     }>;
     handleWebhook(type: string, paymentId: string, body: any): Promise<{

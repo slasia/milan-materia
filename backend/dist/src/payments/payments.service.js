@@ -14,12 +14,14 @@ const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 const prisma_service_1 = require("../prisma/prisma.service");
 const promotions_service_1 = require("../promotions/promotions.service");
+const mail_service_1 = require("../mail/mail.service");
 const mercadopago_1 = require("mercadopago");
 let PaymentsService = class PaymentsService {
-    constructor(configService, prisma, promotionsService) {
+    constructor(configService, prisma, promotionsService, mail) {
         this.configService = configService;
         this.prisma = prisma;
         this.promotionsService = promotionsService;
+        this.mail = mail;
         this.mpClient = new mercadopago_1.default({
             accessToken: this.configService.get('MP_ACCESS_TOKEN') || '',
         });
@@ -84,25 +86,47 @@ let PaymentsService = class PaymentsService {
             };
         });
         const preferenceClient = new mercadopago_1.Preference(this.mpClient);
-        const preference = await preferenceClient.create({
-            body: {
-                items: mpItems,
-                payer: customerEmail ? { email: customerEmail, name: customerName || undefined } : undefined,
-                back_urls: {
-                    success: `${frontendUrl}/success?order=${order.id}`,
-                    failure: `${frontendUrl}/?payment=failure`,
-                    pending: `${frontendUrl}/success?order=${order.id}&status=pending`,
+        let preference;
+        try {
+            preference = await preferenceClient.create({
+                body: {
+                    items: mpItems,
+                    payer: customerEmail ? { email: customerEmail, name: customerName || undefined } : undefined,
+                    back_urls: {
+                        success: `${frontendUrl}/success?order=${order.id}`,
+                        failure: `${frontendUrl}/?payment=failure`,
+                        pending: `${frontendUrl}/success?order=${order.id}&status=pending`,
+                    },
+                    external_reference: String(order.id),
+                    notification_url: `${backendUrl}/payments/webhook`,
+                    statement_descriptor: 'MILAN MATERIA',
                 },
-                auto_return: 'approved',
-                external_reference: String(order.id),
-                notification_url: `${backendUrl}/payments/webhook`,
-                statement_descriptor: 'MILAN MATERIA',
-            },
-        });
+            });
+        }
+        catch (mpError) {
+            await this.prisma.order.update({
+                where: { id: order.id },
+                data: { status: 'cancelled' },
+            });
+            console.error(`Order #${order.id} cancelled: MercadoPago error — ${mpError.message}`);
+            throw new common_1.BadRequestException('No se pudo iniciar el pago con MercadoPago. Intente de nuevo.');
+        }
         await this.prisma.order.update({
             where: { id: order.id },
             data: { mpPreferenceId: preference.id },
         });
+        const fullOrder = await this.prisma.order.findUnique({
+            where: { id: order.id },
+            include: { items: { include: { product: { select: { name: true } } } } },
+        });
+        this.mail.sendNewOrder({
+            id: order.id,
+            total: order.total,
+            customerName,
+            customerEmail,
+            customerPhone,
+            items: fullOrder?.items ?? [],
+        }).catch(() => { });
         return {
             preferenceId: preference.id,
             url: preference.init_point,
@@ -149,6 +173,7 @@ exports.PaymentsService = PaymentsService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [config_1.ConfigService,
         prisma_service_1.PrismaService,
-        promotions_service_1.PromotionsService])
+        promotions_service_1.PromotionsService,
+        mail_service_1.MailService])
 ], PaymentsService);
 //# sourceMappingURL=payments.service.js.map

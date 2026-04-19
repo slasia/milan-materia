@@ -101,7 +101,7 @@ export class PaymentsService {
             failure: `${frontendUrl}/?payment=failure`,
             pending: `${frontendUrl}/success?order=${order.id}&status=pending`,
           },
-          auto_return: 'approved',
+          // auto_return: 'approved' — requires public HTTPS URLs, enable in production
           external_reference: String(order.id),
           notification_url: `${backendUrl}/payments/webhook`,
           statement_descriptor: 'MILAN MATERIA',

@@ -12,6 +12,7 @@ const config_1 = require("@nestjs/config");
 const serve_static_1 = require("@nestjs/serve-static");
 const path_1 = require("path");
 const prisma_module_1 = require("./prisma/prisma.module");
+const mail_module_1 = require("./mail/mail.module");
 const auth_module_1 = require("./auth/auth.module");
 const products_module_1 = require("./products/products.module");
 const categories_module_1 = require("./categories/categories.module");
@@ -33,6 +34,7 @@ exports.AppModule = AppModule = __decorate([
                 serveRoot: '/uploads',
             }),
             prisma_module_1.PrismaModule,
+            mail_module_1.MailModule,
             auth_module_1.AuthModule,
             products_module_1.ProductsModule,
             categories_module_1.CategoriesModule,
