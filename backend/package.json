@@ -4,7 +4,7 @@
   "scripts": {
     "start:dev": "nest start --watch",
     "start": "node dist/main",
-    "start:prod": "prisma migrate deploy && node dist/main",
+    "start:prod": "prisma db push && node dist/main",
     "build": "nest build",
     "build:prod": "nest build && prisma generate",
     "prisma:migrate": "prisma migrate dev",
