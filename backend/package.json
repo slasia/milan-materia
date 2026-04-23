@@ -4,8 +4,12 @@
   "scripts": {
     "start:dev": "nest start --watch",
     "start": "node dist/main",
+    "start:prod": "prisma migrate deploy && node dist/main",
     "build": "nest build",
+    "build:prod": "nest build && prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:push": "prisma db push",
     "prisma:studio": "prisma studio",
     "seed": "ts-node prisma/seed.ts"
   },
