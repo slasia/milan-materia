@@ -42,9 +42,22 @@ export class CreateCheckoutDto {
   @IsOptional()
   promoCode?: string;
 
+  // Shipping fields (collected at checkout)
   @IsString()
   @IsOptional()
   shippingAddress?: string;
+
+  @IsString()
+  @IsOptional()
+  shippingCity?: string;
+
+  @IsString()
+  @IsOptional()
+  shippingProvince?: string;
+
+  @IsString()
+  @IsOptional()
+  shippingZip?: string;
 
   @IsString()
   @IsOptional()

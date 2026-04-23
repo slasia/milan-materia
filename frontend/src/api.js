@@ -1,4 +1,4 @@
-const API = 'http://localhost:3001';
+const API = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 
@@ -42,12 +42,14 @@ export const getPromotions = () =>
   fetch(`${API}/promotions/active`).then(r => r.json());
 
 // ── Checkout ─────────────────────────────────────────────────────────────────
+// shippingData: { customerName?, customerEmail?, customerPhone?,
+//                 shippingAddress?, shippingCity?, shippingProvince?, shippingZip?, notes? }
 
-export const createCheckout = (items) =>
+export const createCheckout = (items, shippingData = {}) =>
   fetch(`${API}/payments/create-checkout-session`, {
     method: 'POST',
     headers: authHeaders(),
-    body: JSON.stringify({ items }),
+    body: JSON.stringify({ items, ...shippingData }),
   }).then(handleResponse);
 
 // ── Orders ───────────────────────────────────────────────────────────────────
@@ -71,6 +73,19 @@ export const customerLogin = (data) =>
     body: JSON.stringify(data),
   }).then(handleResponse);
 
+export const customerVerify = (code) =>
+  fetch(`${API}/auth/customer/verify`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ code }),
+  }).then(handleResponse);
+
+export const customerResendVerification = () =>
+  fetch(`${API}/auth/customer/resend-verification`, {
+    method: 'POST',
+    headers: authHeaders(),
+  }).then(handleResponse);
+
 export const customerMe = () =>
   fetch(`${API}/auth/customer/me`, {
     headers: authHeaders(),
@@ -86,6 +101,20 @@ export const customerUpdate = (data) =>
 export const customerOrders = () =>
   fetch(`${API}/auth/customer/me/orders`, {
     headers: authHeaders(),
+  }).then(handleResponse);
+
+export const customerForgotPassword = (email) =>
+  fetch(`${API}/auth/customer/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  }).then(handleResponse);
+
+export const customerResetPassword = (email, code, password) =>
+  fetch(`${API}/auth/customer/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, code, password }),
   }).then(handleResponse);
 
 // ── Utils ────────────────────────────────────────────────────────────────────

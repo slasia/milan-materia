@@ -1,179 +1,135 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { customerOrders, formatPrice } from '../api';
 import { useAuth } from '../store/auth';
+import { customerOrders, imgUrl, formatPrice } from '../api';
 
-const STATUS_STEPS = [
-  { key: 'pending',    label: 'Recibido',       icon: '📥' },
-  { key: 'paid',       label: 'Pago confirmado', icon: '✅' },
-  { key: 'processing', label: 'En preparación',  icon: '🧉' },
-  { key: 'shipped',    label: 'Enviado',          icon: '🚚' },
-  { key: 'delivered',  label: 'Entregado',        icon: '🏠' },
-];
+const STATUS_LABEL = {
+  pending: 'Pendiente',
+  paid: 'Pagado',
+  processing: 'En preparación',
+  shipped: 'Enviado',
+  delivered: 'Entregado',
+  cancelled: 'Cancelado',
+};
 
-const STATUS_ORDER = ['pending', 'paid', 'processing', 'shipped', 'delivered'];
-
-const STATUS_CANCELLED = 'cancelled';
-
-function fmtDate(iso) {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  return d.toLocaleDateString('es-AR', {
-    day: '2-digit', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
-}
-
-function OrderTracker({ status }) {
-  if (status === STATUS_CANCELLED) {
-    return (
-      <div className="order-tracker">
-        <div className="order-tracker-cancelled">
-          <span>❌</span> Pedido cancelado
-        </div>
-      </div>
-    );
-  }
-
-  const currentIdx = STATUS_ORDER.indexOf(status);
-
-  return (
-    <div className="order-tracker">
-      {STATUS_STEPS.map((step, i) => {
-        const done = i <= currentIdx;
-        const active = i === currentIdx;
-        return (
-          <div key={step.key} className={`tracker-step${done ? ' done' : ''}${active ? ' active' : ''}`}>
-            <div className="tracker-icon">{step.icon}</div>
-            <div className="tracker-label">{step.label}</div>
-            {i < STATUS_STEPS.length - 1 && (
-              <div className={`tracker-line${done && i < currentIdx ? ' done' : ''}`} />
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function OrderCard({ order }) {
-  const [expanded, setExpanded] = useState(false);
-  const items = order.items || [];
-
-  return (
-    <div className="myorder-card">
-      <div className="myorder-card-hd" onClick={() => setExpanded(o => !o)}>
-        <div className="myorder-card-id">
-          Pedido <span>#{String(order.id).padStart(6, '0')}</span>
-        </div>
-        <div className="myorder-card-meta">
-          <span className="myorder-card-date">{fmtDate(order.createdAt)}</span>
-          <span className="myorder-card-total">{formatPrice(order.total || 0)}</span>
-          <span className="myorder-expand-btn">{expanded ? '▲' : '▼'}</span>
-        </div>
-      </div>
-
-      <OrderTracker status={order.status} />
-
-      {expanded && (
-        <div className="myorder-card-body">
-          {order.trackingNumber && (
-            <div className="myorder-tracking">
-              <span>🚚</span>
-              <div>
-                <div className="myorder-tracking-label">Número de seguimiento</div>
-                <div className="myorder-tracking-num">{order.trackingNumber}</div>
-              </div>
-            </div>
-          )}
-          {order.adminNotes && (
-            <div className="myorder-admin-note">
-              <span>💬</span>
-              <div>{order.adminNotes}</div>
-            </div>
-          )}
-          <div className="myorder-items">
-            {items.map((item, i) => (
-              <div className="myorder-item-row" key={i}>
-                <span className="myorder-item-name">
-                  {item.product?.name || `Producto #${item.productId}`}
-                </span>
-                <span className="myorder-item-qty">× {item.quantity}</span>
-                <span className="myorder-item-price">
-                  {formatPrice(item.total || item.unitPrice * item.quantity || 0)}
-                </span>
-              </div>
-            ))}
-          </div>
-          {order.shippingAddress && (
-            <div className="myorder-address">
-              <span>📍</span> {order.shippingAddress}
-            </div>
-          )}
-          {order.notes && (
-            <div className="myorder-notes">
-              <span>📝</span> {order.notes}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
+const STATUS_COLOR = {
+  pending: '#c8a96a',
+  paid: '#4bb98c',
+  processing: '#64a0dc',
+  shipped: '#e8cb8a',
+  delivered: '#4bb98c',
+  cancelled: '#d94f38',
+};
 
 export default function MyOrders({ onClose }) {
   const customer = useAuth(s => s.customer);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [err, setErr] = useState('');
 
   useEffect(() => {
     customerOrders()
-      .then(data => { setOrders(Array.isArray(data) ? data : []); })
-      .catch(e => setError(e.message))
+      .then(setOrders)
+      .catch(e => setErr(e.message || 'Error al cargar pedidos'))
       .finally(() => setLoading(false));
   }, []);
 
   return (
-    <div className="myorders-overlay">
-      <div className="myorders-modal">
+    <div className="myorders-overlay" onClick={onClose}>
+      <div
+        className="myorders-modal"
+        role="dialog"
+        aria-modal="true"
+        onClick={e => e.stopPropagation()}
+      >
         <div className="myorders-hd">
           <div>
-            <h2>Mis Pedidos</h2>
-            {customer?.name && <p className="myorders-greeting">Hola, {customer.name.split(' ')[0]}</p>}
+            <h2>Mis pedidos</h2>
+            {customer?.name && (
+              <p className="myorders-greeting">{customer.name}</p>
+            )}
           </div>
-          <button className="myorders-close" onClick={onClose}>✕</button>
+          <button className="myorders-close" onClick={onClose} aria-label="Cerrar">✕</button>
         </div>
 
-        {loading && (
-          <div className="myorders-loading">
-            <div className="spinner-dark" />
-          </div>
-        )}
+        <div className="myorders-list">
+          {loading && <div className="myorders-loading">Cargando pedidos...</div>}
+          {err && <div className="myorders-error">{err}</div>}
+          {!loading && !err && orders.length === 0 && (
+            <div className="myorders-empty">
+              <div className="myorders-empty-icon">📦</div>
+              <p>Todavía no hiciste ningún pedido</p>
+            </div>
+          )}
 
-        {error && (
-          <div className="myorders-error">
-            No pudimos cargar tus pedidos. Intentá de nuevo más tarde.
-          </div>
-        )}
+          {orders.map(order => (
+            <div key={order.id} className="myorder-card">
+              <div className="myorder-card-hd">
+                <div>
+                  <span className="myorder-num">#{String(order.id).padStart(6, '0')}</span>
+                  <span
+                    className="myorder-status"
+                    style={{ color: STATUS_COLOR[order.status] || '#9a8870' }}
+                  >
+                    {STATUS_LABEL[order.status] || order.status}
+                  </span>
+                </div>
+                <div className="myorder-card-date">
+                  {new Date(order.createdAt).toLocaleDateString('es-AR', {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                  })}
+                </div>
+              </div>
 
-        {!loading && !error && orders.length === 0 && (
-          <div className="myorders-empty">
-            <div className="myorders-empty-icon">🛍</div>
-            <p>Todavía no tenés pedidos</p>
-            <button className="myorders-shop-btn" onClick={onClose}>
-              Ir a la tienda
-            </button>
-          </div>
-        )}
+              <div className="myorder-card-body">
+                {order.trackingNumber && (
+                  <div className="myorder-tracking">
+                    <div>
+                      <div className="myorder-tracking-label">Seguimiento</div>
+                      <div className="myorder-tracking-num">{order.trackingNumber}</div>
+                    </div>
+                  </div>
+                )}
 
-        {!loading && !error && orders.length > 0 && (
-          <div className="myorders-list">
-            {orders.map(order => (
-              <OrderCard key={order.id} order={order} />
-            ))}
-          </div>
-        )}
+                {order.adminNotes && (
+                  <div className="myorder-admin-note">
+                    <span>💬</span>
+                    <span>{order.adminNotes}</span>
+                  </div>
+                )}
+
+                <div className="myorder-items">
+                  {order.items.map(item => (
+                    <div key={item.id} className="myorder-item-row">
+                      {item.product?.imageUrl && (
+                        <img
+                          src={imgUrl(item.product.imageUrl)}
+                          alt={item.product.name}
+                          className="myorder-item-img"
+                          onError={e => { e.target.style.display = 'none'; }}
+                        />
+                      )}
+                      <span className="myorder-item-name">{item.product?.name ?? 'Producto'}</span>
+                      <span className="myorder-item-qty">× {item.quantity}</span>
+                      <span className="myorder-item-price">{formatPrice(item.total)}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {order.shippingAddress && (
+                  <div className="myorder-address">
+                    <span>📍</span>
+                    <span>{order.shippingAddress}</span>
+                  </div>
+                )}
+
+                <div className="myorder-total">
+                  <span>Total</span>
+                  <span>{formatPrice(order.total)}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

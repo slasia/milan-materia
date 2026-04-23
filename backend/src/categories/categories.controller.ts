@@ -12,7 +12,7 @@ import {
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { JwtAuthGuard } from '../auth/auth.guard';
+import { AdminJwtGuard } from '../auth/auth.guard';
 
 @Controller()
 export class CategoriesController {
@@ -28,13 +28,13 @@ export class CategoriesController {
     return this.categoriesService.findOne(id);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AdminJwtGuard)
   @Post('admin/categories')
   create(@Body() createCategoryDto: CreateCategoryDto) {
     return this.categoriesService.create(createCategoryDto);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AdminJwtGuard)
   @Patch('admin/categories/:id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -43,7 +43,7 @@ export class CategoriesController {
     return this.categoriesService.update(id, updateCategoryDto);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AdminJwtGuard)
   @Delete('admin/categories/:id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.categoriesService.remove(id);

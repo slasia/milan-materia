@@ -304,14 +304,179 @@ export class MailService {
             </tr>
           </table>
 
-          <p style="text-align:center;font-size:12px;color:#9a8870;margin:0 0 16px;">Podés seguir el estado de tu pedido iniciando sesión en nuestra tienda.</p>
-          <a href="${this.config.get<string>('FRONTEND_URL') || 'http://localhost:5174'}" class="btn">Ver mis pedidos</a>
+          <p style="text-align:center;font-size:12px;color:#9a8870;margin:0 0 16px;">Ante cualquier consulta, no dudes en contactarnos.</p>
+          <a href="${this.config.get<string>('FRONTEND_URL') || 'http://localhost:5174'}" class="btn">Ir a la tienda</a>
         </div>
         ${this.footer()}
       </div>
     `;
 
     await this.send(`📦 Tu pedido #${String(order.id).padStart(6, '0')} — ${label}`, html, order.customerEmail);
+  }
+
+  // ── Email verification ───────────────────────────────────────────────────
+  async sendEmailVerification(data: { email: string; name: string; code: string }) {
+    const html = `
+      ${this.baseStyle()}
+      <div class="wrap">
+        <div class="header">
+          <span class="logo">MM</span>
+          <p class="sub">MILÁN MATERÍA</p>
+        </div>
+        <div class="body">
+          <h2 style="color:#c8a96a;margin:0 0 8px;">Verificá tu cuenta</h2>
+          <p style="font-size:15px;color:#9a8870;margin:0 0 28px;">
+            Hola <strong style="color:#fff;">${data.name}</strong>, usá este código para verificar tu cuenta:
+          </p>
+
+          <div style="text-align:center;margin-bottom:28px;">
+            <div style="display:inline-block;padding:20px 36px;background:#0a0804;border:2px solid #c8a96a;border-radius:12px;">
+              <p style="margin:0 0 4px;font-size:11px;color:#9a8870;letter-spacing:.12em;text-transform:uppercase;">Tu código de verificación</p>
+              <p style="margin:0;font-size:36px;font-weight:900;font-family:monospace;letter-spacing:.18em;color:#c8a96a;">${data.code}</p>
+            </div>
+          </div>
+
+          <p style="font-size:12px;color:#9a8870;text-align:center;margin:0;">
+            El código expira en 24 horas. Si no creaste esta cuenta, ignorá este mensaje.
+          </p>
+        </div>
+        ${this.footer()}
+      </div>
+    `;
+
+    await this.send(`🧉 Tu código de verificación: ${data.code}`, html, data.email);
+  }
+
+  // ── Buyer order confirmation ─────────────────────────────────────────────
+  async sendBuyerOrderConfirmation(order: {
+    id: number;
+    total: number;
+    subtotal: number;
+    discountAmt: number;
+    customerName?: string;
+    customerEmail: string;
+    shippingAddress?: string;
+    items: { name: string; quantity: number; unitPrice: number }[];
+  }) {
+    const itemRows = order.items
+      .map(
+        (i) =>
+          `<tr>
+            <td style="padding:8px 12px;border-bottom:1px solid #2a2318;">${i.name}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #2a2318;text-align:center;">${i.quantity}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #2a2318;text-align:right;color:#c8a96a;">${this.fmt(i.unitPrice * i.quantity)}</td>
+          </tr>`,
+      )
+      .join('');
+
+    const discountRow = order.discountAmt > 0
+      ? `<tr>
+           <td style="padding:4px 0;color:#9a8870;font-size:13px;">Descuento</td>
+           <td style="padding:4px 0;text-align:right;font-size:13px;color:#4bb98c;">− ${this.fmt(order.discountAmt)}</td>
+         </tr>`
+      : '';
+
+    const shippingBlock = order.shippingAddress
+      ? `<div style="background:#0a0804;border:1px solid #2a2318;border-radius:8px;padding:14px 18px;margin-bottom:20px;">
+           <p style="margin:0 0 4px;font-size:11px;color:#9a8870;letter-spacing:.1em;text-transform:uppercase;">Dirección de envío</p>
+           <p style="margin:0;font-size:14px;color:#fff;">${order.shippingAddress}</p>
+         </div>`
+      : '';
+
+    const greeting = order.customerName
+      ? `<p style="font-size:15px;color:#9a8870;margin:0 0 20px;">¡Hola <strong style="color:#fff;">${order.customerName}</strong>! Tu pedido fue confirmado exitosamente. 🎉</p>`
+      : `<p style="font-size:15px;color:#9a8870;margin:0 0 20px;">¡Tu pedido fue confirmado exitosamente! 🎉</p>`;
+
+    const html = `
+      ${this.baseStyle()}
+      <div class="wrap">
+        <div class="header">
+          <span class="logo">MM</span>
+          <p class="sub">MILÁN MATERÍA</p>
+        </div>
+        <div class="body">
+          <h2 style="color:#c8a96a;margin:0 0 8px;">Pedido <span style="font-family:monospace;">#${String(order.id).padStart(6, '0')}</span></h2>
+          ${greeting}
+
+          <div style="text-align:center;margin-bottom:24px;">
+            <span style="display:inline-block;padding:10px 28px;border-radius:24px;background:#4bb98c22;border:1px solid #4bb98c55;color:#4bb98c;font-size:16px;font-weight:700;letter-spacing:.06em;">
+              ✓ Pago confirmado
+            </span>
+          </div>
+
+          <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:20px;">
+            <thead>
+              <tr style="background:#1a1510;">
+                <th style="padding:8px 12px;text-align:left;font-size:11px;color:#9a8870;letter-spacing:.08em;">PRODUCTO</th>
+                <th style="padding:8px 12px;text-align:center;font-size:11px;color:#9a8870;letter-spacing:.08em;">CANT.</th>
+                <th style="padding:8px 12px;text-align:right;font-size:11px;color:#9a8870;letter-spacing:.08em;">SUBTOTAL</th>
+              </tr>
+            </thead>
+            <tbody>${itemRows}</tbody>
+          </table>
+
+          <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:24px;">
+            ${discountRow}
+            <tr>
+              <td colspan="2" style="padding-top:8px;border-top:1px solid #2a2318;"></td>
+            </tr>
+            <tr>
+              <td style="padding:6px 0;font-size:15px;font-weight:700;">Total pagado</td>
+              <td style="padding:6px 0;text-align:right;font-size:18px;font-weight:700;color:#c8a96a;">${this.fmt(order.total)}</td>
+            </tr>
+          </table>
+
+          ${shippingBlock}
+
+          <p style="font-size:12px;color:#9a8870;text-align:center;margin:0 0 16px;">
+            Recibirás una notificación cuando tu pedido sea enviado.<br>
+            Ante dudas escribinos por WhatsApp o Instagram.
+          </p>
+          <a href="${this.config.get<string>('FRONTEND_URL') || 'http://localhost:5174'}" class="btn">Volver a la tienda</a>
+        </div>
+        ${this.footer()}
+      </div>
+    `;
+
+    await this.send(
+      `🧉 ¡Pedido #${String(order.id).padStart(6, '0')} confirmado! — ${this.fmt(order.total)}`,
+      html,
+      order.customerEmail,
+    );
+  }
+
+  // ── Password reset ───────────────────────────────────────────────────────
+  async sendPasswordReset(data: { email: string; name: string; code: string }) {
+    const html = `
+      ${this.baseStyle()}
+      <div class="wrap">
+        <div class="header">
+          <span class="logo">MM</span>
+          <p class="sub">MILÁN MATERÍA</p>
+        </div>
+        <div class="body">
+          <h2 style="color:#c8a96a;margin:0 0 8px;">Recuperar contraseña</h2>
+          <p style="font-size:15px;color:#9a8870;margin:0 0 28px;">
+            Hola <strong style="color:#fff;">${data.name}</strong>, recibimos una solicitud para restablecer tu contraseña.<br>
+            Usá este código (válido por 1 hora):
+          </p>
+
+          <div style="text-align:center;margin-bottom:28px;">
+            <div style="display:inline-block;padding:20px 36px;background:#0a0804;border:2px solid #c8a96a;border-radius:12px;">
+              <p style="margin:0 0 4px;font-size:11px;color:#9a8870;letter-spacing:.12em;text-transform:uppercase;">Código de recuperación</p>
+              <p style="margin:0;font-size:36px;font-weight:900;font-family:monospace;letter-spacing:.18em;color:#c8a96a;">${data.code}</p>
+            </div>
+          </div>
+
+          <p style="font-size:12px;color:#9a8870;text-align:center;margin:0;">
+            Si no solicitaste este cambio, ignorá este mensaje. Tu contraseña no será modificada.
+          </p>
+        </div>
+        ${this.footer()}
+      </div>
+    `;
+
+    await this.send(`🔑 Recuperar contraseña — código: ${data.code}`, html, data.email);
   }
 
   // ── Shared styles ────────────────────────────────────────────────────────

@@ -9,14 +9,17 @@ export const useAuth = create(
 
       setAuth: (token, customer) => set({ token, customer }),
 
-      logout: () => set({ token: null, customer: null }),
+      updateCustomer: (data) =>
+        set((s) => ({ customer: s.customer ? { ...s.customer, ...data } : data })),
+
+      logout: () => {
+        set({ token: null, customer: null });
+      },
 
       isLoggedIn: () => !!get().token,
-
-      updateProfile: (data) => set(s => ({ customer: { ...s.customer, ...data } })),
     }),
     {
       name: 'mm_customer_auth',
-    },
-  ),
+    }
+  )
 );

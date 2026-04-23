@@ -1,34 +1,33 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class RegisterCustomerDto {
-  @IsEmail()
+  @IsEmail({}, { message: 'Email inválido' })
   email: string;
 
   @IsString()
-  @MinLength(6)
+  @MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
   password: string;
 
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'El nombre es requerido' })
   name: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   phone?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   address?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   city?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   province?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   zip?: string;
 }

@@ -706,6 +706,28 @@ nav.main-nav ul li a:hover, nav.main-nav ul li a.active {
   color: #fff;
 }
 
+/* Botón "Ir al carrito" en la ProductCard */
+.go-cart-btn {
+  width: 100%;
+  padding: 8px 12px;
+  margin-top: 6px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(212,175,55,0.5);
+  background: rgba(212,175,55,0.08);
+  color: #d4af37;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  text-align: center;
+}
+.go-cart-btn:hover {
+  background: rgba(212,175,55,0.18);
+  border-color: rgba(212,175,55,0.8);
+  transform: translateY(-1px);
+}
+
 /* ===== PROMO CARDS ===== */
 .promo-bg {
   background: var(--bg2);
@@ -1243,6 +1265,27 @@ footer a { color: var(--gold); }
   transition: filter .2s, transform .15s;
 }
 .prod-modal-add:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.prod-modal-go-cart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px 20px;
+  border-radius: 14px;
+  border: 1.5px solid rgba(212,175,55,0.5);
+  background: rgba(212,175,55,0.08);
+  color: #d4af37;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+.prod-modal-go-cart:hover {
+  background: rgba(212,175,55,0.18);
+  border-color: rgba(212,175,55,0.9);
+  transform: translateY(-1px);
+}
 .prod-modal-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
 
 /* ===== HAMBURGER ===== */
@@ -1707,12 +1750,69 @@ footer a { color: var(--gold); }
   background: rgba(212,175,55,0.05);
 }
 
+/* Select styled igual que inputs */
+.auth-field select {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  padding: 10px 36px 10px 14px;
+  color: #fff;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='rgba(255,255,255,0.45)' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  cursor: pointer;
+  width: 100%;
+}
+.auth-field select:focus {
+  border-color: rgba(212,175,55,0.6);
+  background-color: rgba(212,175,55,0.05);
+}
+.auth-field select option {
+  background: #1a1208;
+  color: #fff;
+}
+
 .auth-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
-.auth-row-3 { grid-template-columns: 2fr 2fr 1fr; }
+.auth-row-3 { grid-template-columns: 1.6fr 1.6fr 1fr; }
+
+/* Banner de estado de verificación de email */
+.auth-verify-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  line-height: 1.4;
+  flex-wrap: wrap;
+}
+.auth-verify-banner.verified {
+  background: rgba(75,185,140,0.12);
+  border: 1px solid rgba(75,185,140,0.3);
+  color: #4bb98c;
+}
+.auth-verify-banner.unverified {
+  background: rgba(245,158,11,0.10);
+  border: 1px solid rgba(245,158,11,0.35);
+  color: #f59e0b;
+}
+.auth-verify-banner .auth-link {
+  color: inherit;
+  text-decoration: underline;
+  font-weight: 700;
+}
 
 .auth-error {
   background: rgba(220,38,38,0.12);
@@ -1819,14 +1919,24 @@ footer a { color: var(--gold); }
   overflow: hidden;
 }
 .ha-user-menu-email {
-  padding: 11px 16px 9px;
+  padding: 10px 16px 4px;
   font-size: 11px;
   color: rgba(255,255,255,0.4);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.ha-user-menu-verify-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 16px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.ha-verify-ok  { color: #4bb98c; }
+.ha-verify-no  { color: #f59e0b; }
 .ha-user-menu-item {
   display: block;
   width: 100%;
@@ -2122,4 +2232,344 @@ footer a { color: var(--gold); }
 .cart-item-qty button:disabled {
   opacity: 0.3;
   cursor: not-allowed;
+}
+
+/* ─── Checkout Form (CartDrawer step 2) ─────────────────────────────────── */
+
+.cart-back-btn {
+  background: transparent;
+  border: none;
+  color: var(--gold, #c8a96a);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  letter-spacing: .03em;
+}
+.cart-back-btn:hover { opacity: .75; }
+
+.checkout-form {
+  display: flex;
+  flex-direction: column;
+  height: calc(100% - 56px);
+  overflow: hidden;
+}
+
+.checkout-form-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 20px 4px;
+}
+
+.checkout-section-title {
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.35);
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  padding-bottom: 6px;
+}
+
+.cf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.cf-field label {
+  font-size: 11px;
+  color: rgba(255,255,255,.5);
+  letter-spacing: .04em;
+}
+
+.cf-field input,
+.cf-field select,
+.cf-field textarea {
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #fff;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cf-field input::placeholder,
+.cf-field textarea::placeholder {
+  color: rgba(255,255,255,.25);
+}
+
+.cf-field input:focus,
+.cf-field select:focus,
+.cf-field textarea:focus {
+  border-color: rgba(200,169,106,.5);
+}
+
+.cf-field select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='rgba(255,255,255,0.4)' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+  cursor: pointer;
+}
+
+.cf-field select option {
+  background: #1a1410;
+  color: #fff;
+}
+
+.cf-field textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+
+.cf-error {
+  font-size: 11px;
+  color: #f87171;
+}
+
+.cf-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Order summary in checkout form */
+.checkout-summary {
+  background: rgba(0,0,0,.3);
+  border-top: 1px solid rgba(255,255,255,.07);
+  padding: 12px 20px;
+}
+
+.checkout-summary-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.checkout-summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: rgba(255,255,255,.5);
+}
+
+.checkout-summary-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 700;
+  color: #c8a96a;
+  border-top: 1px solid rgba(255,255,255,.08);
+  padding-top: 8px;
+}
+
+.checkout-secure-note {
+  text-align: center;
+  font-size: 11px;
+  color: rgba(255,255,255,.3);
+  margin: 8px 0 0;
+}
+
+/* Mobile adjustments */
+@media (max-width: 480px) {
+  .cf-row { grid-template-columns: 1fr; gap: 0; }
+  .checkout-form-scroll { padding: 16px 16px 4px; }
+  .checkout-summary { padding: 10px 16px; }
+}
+
+/* ─── Email Verification Step (AuthModal) ───────────────────────────────── */
+
+.auth-verify {
+  text-align: center;
+  padding: 8px 0 0;
+}
+
+.auth-verify-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.auth-verify-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 8px;
+}
+
+.auth-verify-sub {
+  font-size: 13px;
+  color: rgba(255,255,255,.5);
+  margin: 0 0 28px;
+  line-height: 1.6;
+}
+
+.auth-verify-sub strong {
+  color: #c8a96a;
+  font-weight: 600;
+}
+
+/* 5-digit code inputs */
+.auth-code-inputs {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.auth-code-digit {
+  width: 48px;
+  height: 58px;
+  background: rgba(255,255,255,.05);
+  border: 2px solid rgba(255,255,255,.15);
+  border-radius: 10px;
+  color: #c8a96a;
+  font-size: 24px;
+  font-weight: 700;
+  font-family: monospace;
+  text-align: center;
+  outline: none;
+  transition: border-color .2s, background .2s;
+  caret-color: #c8a96a;
+}
+
+.auth-code-digit:focus {
+  border-color: #c8a96a;
+  background: rgba(200,169,106,.08);
+}
+
+/* ─── Forgot / Reset password steps ─────────────────────────────────────── */
+.auth-forgot {
+  text-align: center;
+  padding: 8px 0 0;
+}
+.auth-forgot-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+.auth-forgot-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 8px;
+}
+.auth-forgot-sub {
+  font-size: 13px;
+  color: rgba(255,255,255,.5);
+  margin: 0 0 24px;
+  line-height: 1.6;
+}
+.auth-forgot-sub strong {
+  color: #c8a96a;
+  font-weight: 600;
+}
+.auth-forgot .auth-form {
+  text-align: left;
+}
+
+/* Success message */
+.auth-success {
+  font-size: 13px;
+  color: #4bb98c;
+  text-align: center;
+  margin: 4px 0 8px;
+}
+
+/* Unverified badge in user menu */
+.ha-unverified-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background: #f59e0b;
+  color: #000;
+  font-size: 10px;
+  font-weight: 900;
+  border-radius: 50%;
+  margin-left: 2px;
+  flex-shrink: 0;
+}
+
+.ha-user-menu-warn {
+  display: none; /* reemplazado por ha-user-menu-verify-status */
+}
+
+/* Pre-fill note in checkout form */
+.cf-prefill-note {
+  font-size: 11px;
+  color: #4bb98c;
+  margin: -4px 0 12px;
+  line-height: 1.4;
+}
+
+/* MyOrders panel — improved mobile styles */
+.myorder-item-img {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.myorder-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 700;
+  color: #c8a96a;
+  border-top: 1px solid rgba(255,255,255,.08);
+  padding-top: 10px;
+  margin-top: 10px;
+}
+
+/* ─── Mobile improvements (Req 4) ───────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  /* Auth modal full-screen on mobile */
+  .auth-modal {
+    position: fixed;
+    inset: 0;
+    margin: 0;
+    max-height: 100dvh;
+    border-radius: 0;
+    overflow-y: auto;
+  }
+
+  .auth-row { grid-template-columns: 1fr; }
+  .auth-row-3 { grid-template-columns: 1fr 1fr; }
+
+  /* Verification digits smaller on tiny screens */
+  .auth-code-digit { width: 42px; height: 52px; font-size: 20px; gap: 8px; }
+  .auth-code-inputs { gap: 8px; }
+
+  /* Hide text labels on mobile header */
+  .ha-user-name { display: none; }
+  .ha-login-btn span { display: none; }
+
+  /* Checkout form adjustments */
+  .cf-row { grid-template-columns: 1fr; gap: 0; }
+  .checkout-form-scroll { padding: 14px 14px 4px; }
+  .checkout-summary { padding: 10px 14px; }
+
+  /* My orders */
+  .myorders-panel {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    width: 100%;
+    max-width: 100%;
+    border-radius: 20px 20px 0 0;
+    max-height: 90dvh;
+  }
+  .myorder-card-date { display: none; }
 }

@@ -30,82 +30,86 @@ model Category {
 }
 
 model Product {
-  id          Int         @id @default(autoincrement())
-  name        String
-  description String?
-  price       Int
+  id            Int         @id @default(autoincrement())
+  name          String
+  description   String?
+  price         Int
   originalPrice Int?
-  imageUrl    String?
-  badge       String?
-  badgeType   String?
-  featured    Boolean     @default(false)
-  active      Boolean     @default(true)
-  stock       Int         @default(100)
-  categoryId  Int
-  category    Category    @relation(fields: [categoryId], references: [id])
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  orderItems  OrderItem[]
+  imageUrl      String?
+  badge         String?
+  badgeType     String?
+  featured      Boolean     @default(false)
+  active        Boolean     @default(true)
+  stock         Int         @default(100)
+  categoryId    Int
+  category      Category    @relation(fields: [categoryId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  orderItems    OrderItem[]
 }
 
 model Promotion {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   type        String
   title       String
   description String?
-  code        String?  @unique
+  code        String?   @unique
   discountPct Int?
   discountAmt Int?
   minCartAmt  Int?
   maxUses     Int?
-  usedCount   Int      @default(0)
-  active      Boolean  @default(true)
+  usedCount   Int       @default(0)
+  active      Boolean   @default(true)
   startsAt    DateTime?
   endsAt      DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model Customer {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  name      String
-  phone     String?
-  // Shipping address
-  address   String?
-  city      String?
-  province  String?
-  zip       String?
-  country   String   @default("Argentina")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  orders    Order[]
+  id               Int      @id @default(autoincrement())
+  email            String   @unique
+  password         String
+  name             String
+  phone            String?
+  address          String?
+  city             String?
+  province         String?
+  zip              String?
+  country          String   @default("Argentina")
+  emailVerified           Boolean   @default(false)
+  verificationCode        String?
+  verificationCodeExpires DateTime?
+  passwordResetCode       String?
+  passwordResetExpires    DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt        DateTime @updatedAt
+  orders           Order[]
 }
 
 model Order {
-  id             Int         @id @default(autoincrement())
-  status         String      @default("pending")
-  customerId     Int?
-  customer       Customer?   @relation(fields: [customerId], references: [id])
-  customerEmail  String?
-  customerName   String?
-  customerPhone  String?
-  subtotal       Int
-  discountAmt    Int         @default(0)
-  total          Int
-  promoCode      String?
-  promotionId    Int?
-  mpPreferenceId String?    @unique
-  mpPaymentId    String?
-  paymentMethod  String?
-  notes          String?
+  id              Int         @id @default(autoincrement())
+  status          String      @default("pending")
+  customerId      Int?
+  customer        Customer?   @relation(fields: [customerId], references: [id])
+  customerEmail   String?
+  customerName    String?
+  customerPhone   String?
+  subtotal        Int
+  discountAmt     Int         @default(0)
+  total           Int
+  promoCode       String?
+  promotionId     Int?
+  mpPreferenceId  String?     @unique
+  mpPaymentId     String?
+  paymentMethod   String?
+  notes           String?
   shippingAddress String?
-  trackingNumber String?
-  adminNotes     String?
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  items          OrderItem[]
+  trackingNumber  String?
+  adminNotes      String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  items           OrderItem[]
 }
 
 model OrderItem {

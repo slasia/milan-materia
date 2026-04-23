@@ -18,7 +18,7 @@ import { extname } from "path";
 import { ProductsService } from "./products.service";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
-import { JwtAuthGuard } from "../auth/auth.guard";
+import { AdminJwtGuard } from "../auth/auth.guard";
 
 @Controller()
 export class ProductsController {
@@ -40,19 +40,19 @@ export class ProductsController {
     return this.productsService.findOne(id);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AdminJwtGuard)
   @Post("admin/products")
   create(@Body() createProductDto: CreateProductDto) {
     return this.productsService.create(createProductDto);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AdminJwtGuard)
   @Get("admin/products")
   getAll() {
     return this.productsService.findAll();
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AdminJwtGuard)
   @Patch("admin/products/:id")
   update(
     @Param("id", ParseIntPipe) id: number,
@@ -61,13 +61,13 @@ export class ProductsController {
     return this.productsService.update(id, updateProductDto);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AdminJwtGuard)
   @Delete("admin/products/:id")
   remove(@Param("id", ParseIntPipe) id: number) {
     return this.productsService.remove(id);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AdminJwtGuard)
   @Post("admin/products/:id/image")
   @UseInterceptors(
     FileInterceptor("image", {

@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { join } from 'path';
 import { PrismaModule } from './prisma/prisma.module';
 import { MailModule } from './mail/mail.module';
@@ -18,6 +20,12 @@ import { CustomersModule } from './customers/customers.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,   // 1 minute window
+        limit: 60,    // max 60 requests per minute per IP
+      },
+    ]),
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
@@ -32,6 +40,12 @@ import { CustomersModule } from './customers/customers.module';
     OrdersModule,
     DashboardModule,
     CustomersModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}

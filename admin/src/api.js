@@ -1,4 +1,4 @@
-const API = 'http://localhost:3001'
+const API = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
 
 function headers() {
   const token = localStorage.getItem('mm_admin_token')
@@ -47,6 +47,7 @@ export const getPromotions = () => req('/admin/promotions')
 export const createPromotion = (data) => req('/admin/promotions', { method: 'POST', body: JSON.stringify(data) })
 export const updatePromotion = (id, data) => req('/admin/promotions/' + id, { method: 'PATCH', body: JSON.stringify(data) })
 export const deletePromotion = (id) => req('/admin/promotions/' + id, { method: 'DELETE' })
+
 export const getCustomers = (params = {}) => {
   const qs = new URLSearchParams()
   if (params.page)   qs.set('page',   params.page)

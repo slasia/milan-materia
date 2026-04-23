@@ -1,25 +1,26 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 import { CustomersService } from './customers.service';
 import { CustomersController, AdminCustomersController } from './customers.controller';
-import { CustomerJwtGuard, OptionalCustomerJwtGuard } from './customer-jwt.guard';
+import { RequireCustomerJwtGuard, OptionalCustomerJwtGuard } from './customer-jwt.guard';
+import { PrismaModule } from '../prisma/prisma.module';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
+    PrismaModule,
+    MailModule,
     JwtModule.registerAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'super-secret-change-in-production',
-        signOptions: {
-          expiresIn: configService.get<string>('JWT_EXPIRES_IN') || '7d',
-        },
-      }),
       inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: config.get<string>('JWT_SECRET') || 'fallback-secret',
+        signOptions: { expiresIn: config.get<string>('JWT_EXPIRES_IN') || '7d' },
+      }),
     }),
   ],
-  providers: [CustomersService, CustomerJwtGuard, OptionalCustomerJwtGuard],
+  providers: [CustomersService, RequireCustomerJwtGuard, OptionalCustomerJwtGuard],
   controllers: [CustomersController, AdminCustomersController],
-  exports: [CustomersService, CustomerJwtGuard, OptionalCustomerJwtGuard, JwtModule],
+  exports: [CustomersService, JwtModule, RequireCustomerJwtGuard, OptionalCustomerJwtGuard],
 })
 export class CustomersModule {}

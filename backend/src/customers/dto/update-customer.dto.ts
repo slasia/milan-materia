@@ -1,32 +1,32 @@
 import { IsOptional, IsString, MinLength } from 'class-validator';
 
 export class UpdateCustomerDto {
-  @IsString()
   @IsOptional()
+  @IsString()
   name?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   phone?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   address?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   city?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   province?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   zip?: string;
 
-  @IsString()
   @IsOptional()
-  @MinLength(6)
+  @IsString()
+  @MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
   password?: string;
 }

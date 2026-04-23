@@ -9,8 +9,12 @@ const WAIcon = () => (
 );
 
 export default function ProductModal({ product, onClose }) {
-  const addItem = useCart(s => s.addItem);
+  const addItem   = useCart(s => s.addItem);
+  const openCart  = useCart(s => s.openCart);
+  const cartItems = useCart(s => s.items);
   const [added, setAdded] = useState(false);
+
+  const inCartNow = product ? cartItems.some(i => i.productId === product.id) : false;
   const [imgFailed, setImgFailed] = useState(false);
 
   useEffect(() => {
@@ -98,6 +102,11 @@ export default function ProductModal({ product, onClose }) {
             >
               {added ? '✓ Agregado al carrito' : inStock ? 'Agregar al carrito' : 'Sin stock'}
             </button>
+            {inCartNow && (
+              <button className="prod-modal-go-cart" onClick={openCart}>
+                🛒 Ir al carrito
+              </button>
+            )}
             <a
               href={waUrl}
               target="_blank"

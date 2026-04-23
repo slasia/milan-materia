@@ -72,6 +72,7 @@ export class OrdersService {
       data: updateData,
     });
 
+    // Prefer stored customer fields; fall back to linked Customer record
     const customerEmail = existing.customerEmail ?? existing.customer?.email;
     const customerName  = existing.customerName  ?? existing.customer?.name;
 
@@ -82,7 +83,7 @@ export class OrdersService {
       total: updated.total,
       customerName: customerName ?? undefined,
       customerEmail: customerEmail ?? undefined,
-    }).catch(() => {/* ignore mail errors */});
+    }).catch(() => {});
 
     // Notify customer if they have an email (fire-and-forget)
     if (customerEmail) {
@@ -92,14 +93,14 @@ export class OrdersService {
         total: updated.total,
         customerName: customerName ?? undefined,
         customerEmail,
-        trackingNumber: (updated as any).trackingNumber ?? undefined,
-        adminNotes: (updated as any).adminNotes ?? undefined,
+        trackingNumber: updated.trackingNumber ?? undefined,
+        adminNotes: updated.adminNotes ?? undefined,
         items: existing.items.map(i => ({
           name: i.product?.name ?? 'Producto',
           quantity: i.quantity,
           unitPrice: i.unitPrice,
         })),
-      }).catch(() => {/* ignore mail errors */});
+      }).catch(() => {});
     }
 
     return updated;

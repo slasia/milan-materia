@@ -22,19 +22,31 @@ export class PaymentsService {
   }
 
   async createCheckoutSession(dto: CreateCheckoutDto, customerId?: number) {
-    let { items, customerEmail, customerName, customerPhone, promoCode, shippingAddress, notes } = dto;
+    let {
+      items,
+      customerEmail,
+      customerName,
+      customerPhone,
+      promoCode,
+      shippingAddress,
+      shippingCity,
+      shippingProvince,
+      shippingZip,
+      notes,
+    } = dto;
 
-    // If the request comes from a logged-in customer, load their profile and auto-fill missing fields
+    // If logged in, auto-fill missing fields from the customer profile
     if (customerId) {
       const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
       if (customer) {
         customerEmail = customerEmail || customer.email;
         customerName  = customerName  || customer.name;
         customerPhone = customerPhone || customer.phone || undefined;
-        if (!shippingAddress && customer.address) {
-          shippingAddress = [customer.address, customer.city, customer.province, customer.zip, customer.country]
-            .filter(Boolean).join(', ');
-        }
+        // Only pre-fill shipping if not already provided
+        if (!shippingAddress && customer.address) shippingAddress = customer.address;
+        if (!shippingCity     && customer.city)    shippingCity    = customer.city;
+        if (!shippingProvince && customer.province) shippingProvince = customer.province;
+        if (!shippingZip      && customer.zip)     shippingZip     = customer.zip;
       }
     }
 
@@ -48,16 +60,6 @@ export class PaymentsService {
     if (products.length !== productIds.length) throw new BadRequestException('One or more products not found');
 
     const productMap = new Map(products.map((p) => [p.id, p]));
-
-    // Validate stock for every item before doing anything
-    for (const item of items) {
-      const product = productMap.get(item.productId);
-      if (product.stock < item.quantity) {
-        throw new BadRequestException(
-          `Stock insuficiente para "${product.name}". Disponible: ${product.stock}, solicitado: ${item.quantity}.`,
-        );
-      }
-    }
 
     let subtotal = 0;
     const orderItemsData = items.map((item) => {
@@ -78,26 +80,49 @@ export class PaymentsService {
 
     const total = Math.max(0, subtotal - discountAmt);
 
-    // Create pending order
-    const order = await this.prisma.order.create({
-      data: {
-        status: 'pending',
-        customerId: customerId ?? null,
-        customerEmail,
-        customerName,
-        customerPhone,
-        subtotal,
-        discountAmt,
-        total,
-        promoCode,
-        promotionId,
-        shippingAddress,
-        notes,
-        items: { create: orderItemsData },
-      },
+    // Compose full shipping address string for storage
+    const fullShippingAddress = [shippingAddress, shippingCity, shippingProvince, shippingZip]
+      .filter(Boolean)
+      .join(', ') || undefined;
+
+    // Atomically decrement stock + create order in a single transaction (BUG-02 fix)
+    // updateMany with stock >= quantity ensures no overselling under concurrency
+    const order = await this.prisma.$transaction(async (tx) => {
+      for (const item of items) {
+        const product = productMap.get(item.productId);
+        const result = await tx.product.updateMany({
+          where: { id: item.productId, active: true, stock: { gte: item.quantity } },
+          data: { stock: { decrement: item.quantity } },
+        });
+        if (result.count === 0) {
+          // Re-fetch to report accurate remaining stock in the error message
+          const fresh = await tx.product.findUnique({ where: { id: item.productId } });
+          throw new BadRequestException(
+            `Stock insuficiente para "${product.name}". Disponible: ${fresh?.stock ?? 0}, solicitado: ${item.quantity}.`,
+          );
+        }
+      }
+
+      return tx.order.create({
+        data: {
+          status: 'pending',
+          customerId: customerId ?? null,
+          customerEmail,
+          customerName,
+          customerPhone,
+          subtotal,
+          discountAmt,
+          total,
+          promoCode,
+          promotionId,
+          shippingAddress: fullShippingAddress,
+          notes,
+          items: { create: orderItemsData },
+        },
+      });
     });
 
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5500';
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5174';
     const backendUrl  = this.configService.get<string>('BACKEND_URL')  || 'http://localhost:3001';
 
     // MercadoPago prices are in whole ARS (not cents) — divide by 100
@@ -110,7 +135,7 @@ export class PaymentsService {
         picture_url: product.imageUrl ? `${backendUrl}/${product.imageUrl}` : undefined,
         quantity: item.quantity,
         currency_id: 'ARS',
-        unit_price: product.price / 100,  // cents → ARS
+        unit_price: product.price / 100,
       };
     });
 
@@ -126,14 +151,12 @@ export class PaymentsService {
             failure: `${frontendUrl}/?payment=failure`,
             pending: `${frontendUrl}/success?order=${order.id}&status=pending`,
           },
-          // auto_return: 'approved' — requires public HTTPS URLs, enable in production
           external_reference: String(order.id),
           notification_url: `${backendUrl}/payments/webhook`,
           statement_descriptor: 'MILAN MATERIA',
         },
       });
     } catch (mpError) {
-      // MercadoPago failed — cancel the order so it doesn't stay as pending
       await this.prisma.order.update({
         where: { id: order.id },
         data: { status: 'cancelled' },
@@ -147,7 +170,7 @@ export class PaymentsService {
       data: { mpPreferenceId: preference.id },
     });
 
-    // Send notification email (non-blocking)
+    // Send admin notification (fire-and-forget)
     const fullOrder = await this.prisma.order.findUnique({
       where: { id: order.id },
       include: { items: { include: { product: { select: { name: true } } } } },
@@ -159,12 +182,12 @@ export class PaymentsService {
       customerEmail,
       customerPhone,
       items: fullOrder?.items ?? [],
-    }).catch(() => {/* fire-and-forget */});
+    }).catch(() => {});
 
     return {
       preferenceId: preference.id,
-      url: preference.init_point,         // production URL
-      sandboxUrl: preference.sandbox_init_point, // test URL
+      url: preference.init_point,
+      sandboxUrl: preference.sandbox_init_point,
       orderId: order.id,
     };
   }
@@ -189,24 +212,36 @@ export class PaymentsService {
           },
         });
 
-        // Decrement stock for every item in the order
         const order = await this.prisma.order.findUnique({
           where: { id: orderId },
-          include: { items: true },
+          include: { items: { include: { product: { select: { name: true } } } } },
         });
+
         if (order) {
-          for (const item of order.items) {
-            await this.prisma.product.update({
-              where: { id: item.productId },
-              data: { stock: { decrement: item.quantity } },
-            });
-          }
+          // Stock already decremented atomically at checkout (BUG-02 fix — no double decrement)
           // Increment promo usage
           if (order.promotionId) {
             await this.prisma.promotion.update({
               where: { id: order.promotionId },
               data: { usedCount: { increment: 1 } },
             });
+          }
+          // Send buyer confirmation email
+          if (order.customerEmail) {
+            this.mail.sendBuyerOrderConfirmation({
+              id: order.id,
+              total: order.total,
+              subtotal: order.subtotal,
+              discountAmt: order.discountAmt,
+              customerName: order.customerName || undefined,
+              customerEmail: order.customerEmail,
+              shippingAddress: order.shippingAddress || undefined,
+              items: order.items.map(i => ({
+                name: i.product?.name ?? 'Producto',
+                quantity: i.quantity,
+                unitPrice: i.unitPrice,
+              })),
+            }).catch(() => {});
           }
         }
         console.log(`Order #${orderId} marked as PAID — stock decremented`);

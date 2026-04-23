@@ -17,7 +17,7 @@ const WAIcon = () => (
 );
 
 const CartIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
     <line x1="3" y1="6" x2="21" y2="6"/>
     <path d="M16 10a4 4 0 01-8 0"/>
@@ -25,7 +25,7 @@ const CartIcon = () => (
 );
 
 const UserIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
     <circle cx="12" cy="7" r="4"/>
   </svg>
@@ -35,6 +35,7 @@ export default function Header({ onCartOpen, onMyOrders }) {
   const [mobOpen, setMobOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
   const count = useCart(s => s.count());
   const customer = useAuth(s => s.customer);
   const logout = useAuth(s => s.logout);
@@ -65,7 +66,7 @@ export default function Header({ onCartOpen, onMyOrders }) {
         <div className="header-inner">
           <a href="#" className="site-logo">
             <img
-              src="http://localhost:3001/img/logo-full.png"
+              src={`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/img/logo-full.png`}
               alt="Milán Matería"
               style={{ height: '52px', width: 'auto' }}
               onError={e => {
@@ -83,7 +84,7 @@ export default function Header({ onCartOpen, onMyOrders }) {
 
           <nav className="main-nav" aria-label="Navegación principal">
             <ul>
-              <li><a href="#mates" className="active">Mates</a></li>
+              <li><a href="#mates">Mates</a></li>
               <li><a href="#imperiales">Imperiales</a></li>
               <li><a href="#torpedos">Torpedos</a></li>
               <li><a href="#algarrobo">Algarrobo</a></li>
@@ -99,47 +100,46 @@ export default function Header({ onCartOpen, onMyOrders }) {
             onClick={toggleMob}
             aria-label="Menú"
           >
-            <span></span>
-            <span></span>
-            <span></span>
+            <span></span><span></span><span></span>
           </button>
 
           <div className="header-actions">
-            <a
-              href="https://instagram.com/milan.materia"
-              target="_blank"
-              rel="noreferrer"
-              className="ha-icon"
-              title="@milan.materia en Instagram"
-            >
+            <a href="https://instagram.com/milan.materia" target="_blank" rel="noreferrer"
+              className="ha-icon" title="Instagram">
               <IGIcon />
             </a>
-            <a
-              href="https://wa.me/5492236667793"
-              target="_blank"
-              rel="noreferrer"
-              className="ha-icon ha-wa"
-              title="WhatsApp 223 666-7793"
-            >
+            <a href="https://wa.me/5492236667793" target="_blank" rel="noreferrer"
+              className="ha-icon ha-wa" title="WhatsApp">
               <WAIcon />
             </a>
 
-            {/* User auth area */}
+            {/* Auth area */}
             {isLoggedIn ? (
               <div className="ha-user-wrap">
-                <button
-                  className="ha-user-btn"
-                  onClick={() => setUserMenuOpen(o => !o)}
-                  title="Mi cuenta"
-                >
+                <button className="ha-user-btn" onClick={() => setUserMenuOpen(o => !o)} title="Mi cuenta">
                   <UserIcon />
                   <span className="ha-user-name">{firstName}</span>
+                  {customer && !customer.emailVerified && (
+                    <span className="ha-unverified-dot" title="Email sin verificar">!</span>
+                  )}
                 </button>
                 {userMenuOpen && (
                   <>
                     <div className="ha-user-menu-backdrop" onClick={() => setUserMenuOpen(false)} />
                     <div className="ha-user-menu">
                       <div className="ha-user-menu-email">{customer?.email}</div>
+                      <div className="ha-user-menu-verify-status">
+                        {customer?.emailVerified
+                          ? <><span className="ha-verify-ok">✔</span><span className="ha-verify-ok">Email verificado</span></>
+                          : <button
+                              style={{ background:'none', border:'none', padding:0, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}
+                              onClick={() => { setUserMenuOpen(false); setAuthOpen(true); }}
+                            >
+                              <span className="ha-verify-no">⚠</span>
+                              <span className="ha-verify-no" style={{ textDecoration:'underline' }}>Email sin verificar — verificar</span>
+                            </button>
+                        }
+                      </div>
                       <button
                         className="ha-user-menu-item"
                         onClick={() => { setUserMenuOpen(false); onMyOrders?.(); }}
@@ -154,11 +154,7 @@ export default function Header({ onCartOpen, onMyOrders }) {
                 )}
               </div>
             ) : (
-              <button
-                className="ha-login-btn"
-                onClick={() => setAuthOpen(true)}
-                title="Iniciar sesión"
-              >
+              <button className="ha-login-btn" onClick={() => setAuthOpen(true)} title="Iniciar sesión">
                 <UserIcon />
                 <span>Ingresar</span>
               </button>

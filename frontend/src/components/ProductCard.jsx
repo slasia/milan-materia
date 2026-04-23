@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCart } from '../store/cart';
 import { imgUrl, formatPrice } from '../api';
 
@@ -27,10 +27,21 @@ function ProductPlaceholder({ name }) {
 }
 
 export default function ProductCard({ product, onClick }) {
-  const addItem = useCart(s => s.addItem);
+  const addItem   = useCart(s => s.addItem);
+  const openCart  = useCart(s => s.openCart);
+  const cartItems = useCart(s => s.items);
   const [wished, setWished] = useState(false);
-  const [added, setAdded] = useState(false);
+  const [flash, setFlash] = useState(false);
   const [imgFailed, setImgFailed] = useState(false);
+
+  const inCartNow = cartItems.some(i => i.productId === product.id);
+
+  // reset flash after animation
+  useEffect(() => {
+    if (!flash) return;
+    const t = setTimeout(() => setFlash(false), 1200);
+    return () => clearTimeout(t);
+  }, [flash]);
 
   const badge = getBadge(product);
   const inStock = product.active !== false && (product.stock === undefined || product.stock > 0);
@@ -39,8 +50,7 @@ export default function ProductCard({ product, onClick }) {
     e.stopPropagation();
     if (!inStock) return;
     addItem(product);
-    setAdded(true);
-    setTimeout(() => setAdded(false), 1400);
+    setFlash(true);
   };
 
   const handleWish = (e) => {
@@ -87,14 +97,22 @@ export default function ProductCard({ product, onClick }) {
             {cuotas && <div className="prod-cuotas">{cuotas}</div>}
           </div>
           <button
-            className={`add-btn${added ? ' added' : ''}`}
+            className={`add-btn${flash ? ' added' : ''}`}
             onClick={handleAdd}
             disabled={!inStock}
             title={inStock ? 'Agregar al carrito' : 'Sin stock'}
           >
-            {added ? '✓ Listo' : inStock ? 'Agregar' : 'Sin stock'}
+            {flash ? '✓ Listo' : inStock ? 'Agregar' : 'Sin stock'}
           </button>
         </div>
+        {inCartNow && (
+          <button
+            className="go-cart-btn"
+            onClick={e => { e.stopPropagation(); openCart(); }}
+          >
+            🛒 Ir al carrito
+          </button>
+        )}
       </div>
     </div>
   );

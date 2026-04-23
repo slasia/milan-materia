@@ -14,7 +14,7 @@ import { PromotionsService } from './promotions.service';
 import { CreatePromotionDto } from './dto/create-promotion.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
 import { ValidateCodeDto } from './dto/validate-code.dto';
-import { JwtAuthGuard } from '../auth/auth.guard';
+import { AdminJwtGuard } from '../auth/auth.guard';
 
 @Controller()
 export class PromotionsController {
@@ -33,19 +33,19 @@ export class PromotionsController {
     );
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AdminJwtGuard)
   @Get('admin/promotions')
   findAll() {
     return this.promotionsService.findAll();
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AdminJwtGuard)
   @Post('admin/promotions')
   create(@Body() createPromotionDto: CreatePromotionDto) {
     return this.promotionsService.create(createPromotionDto);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AdminJwtGuard)
   @Patch('admin/promotions/:id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -54,7 +54,7 @@ export class PromotionsController {
     return this.promotionsService.update(id, updatePromotionDto);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AdminJwtGuard)
   @Delete('admin/promotions/:id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.promotionsService.remove(id);

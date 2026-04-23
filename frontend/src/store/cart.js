@@ -5,6 +5,9 @@ export const useCart = create(
   persist(
     (set, get) => ({
       items: [],
+      open: false,
+      openCart:  () => set({ open: true }),
+      closeCart: () => set({ open: false }),
 
       addItem: (product) => {
         const items = get().items;
@@ -63,6 +66,6 @@ export const useCart = create(
       count: () =>
         get().items.reduce((s, i) => s + i.quantity, 0),
     }),
-    { name: 'mm_cart' },
+    { name: 'mm_cart', partialize: (s) => ({ items: s.items }) },
   ),
 );

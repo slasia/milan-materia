@@ -5,24 +5,22 @@ import {
   Patch,
   Body,
   Req,
+  UseGuards,
   Param,
   ParseIntPipe,
   Query,
-  UseGuards,
-  HttpCode,
-  HttpStatus,
 } from '@nestjs/common';
 import { CustomersService } from './customers.service';
 import { RegisterCustomerDto } from './dto/register-customer.dto';
-import { LoginCustomerDto } from './dto/login-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
-import { CustomerJwtGuard } from './customer-jwt.guard';
-import { JwtAuthGuard } from '../auth/auth.guard';
-import { Request } from 'express';
+import { RequireCustomerJwtGuard } from './customer-jwt.guard';
+import { AdminJwtGuard } from '../auth/auth.guard';
 
 @Controller('auth/customer')
 export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
+
+  // ── Public auth ───────────────────────────────────────────────────────────
 
   @Post('register')
   register(@Body() dto: RegisterCustomerDto) {
@@ -30,55 +28,78 @@ export class CustomersController {
   }
 
   @Post('login')
-  @HttpCode(HttpStatus.OK)
-  login(@Body() dto: LoginCustomerDto) {
-    return this.customersService.login(dto);
+  login(@Body() body: { email: string; password: string }) {
+    return this.customersService.login(body.email, body.password);
   }
 
+  @Post('forgot-password')
+  forgotPassword(@Body() body: { email: string }) {
+    return this.customersService.forgotPassword(body.email);
+  }
+
+  @Post('reset-password')
+  resetPassword(@Body() body: { email: string; code: string; password: string }) {
+    return this.customersService.resetPassword(body.email, body.code, body.password);
+  }
+
+  // ── Email verification (requires customer JWT) ────────────────────────────
+
+  @Post('verify')
+  @UseGuards(RequireCustomerJwtGuard)
+  verify(@Req() req: any, @Body() body: { code: string }) {
+    return this.customersService.verifyEmail(req.user.id, body.code);
+  }
+
+  @Post('resend-verification')
+  @UseGuards(RequireCustomerJwtGuard)
+  resendVerification(@Req() req: any) {
+    return this.customersService.resendVerification(req.user.id);
+  }
+
+  // ── Customer profile (requires customer JWT) ──────────────────────────────
+
   @Get('me')
-  @UseGuards(CustomerJwtGuard)
-  me(@Req() req: Request) {
-    const user = req['user'] as { id: number };
-    return this.customersService.findById(user.id);
+  @UseGuards(RequireCustomerJwtGuard)
+  getMe(@Req() req: any) {
+    return this.customersService.getProfile(req.user.id);
   }
 
   @Patch('me')
-  @UseGuards(CustomerJwtGuard)
-  update(@Req() req: Request, @Body() dto: UpdateCustomerDto) {
-    const user = req['user'] as { id: number };
-    return this.customersService.update(user.id, dto);
+  @UseGuards(RequireCustomerJwtGuard)
+  updateMe(@Req() req: any, @Body() dto: UpdateCustomerDto) {
+    return this.customersService.updateProfile(req.user.id, dto);
   }
 
   @Get('me/orders')
-  @UseGuards(CustomerJwtGuard)
-  myOrders(@Req() req: Request) {
-    const user = req['user'] as { id: number };
-    return this.customersService.getOrders(user.id);
+  @UseGuards(RequireCustomerJwtGuard)
+  getMyOrders(@Req() req: any) {
+    return this.customersService.getOrders(req.user.id);
   }
-
 }
+
+// ── Admin customer routes (separate controller prefix) ────────────────────────
 
 @Controller('admin/customers')
 export class AdminCustomersController {
   constructor(private readonly customersService: CustomersService) {}
 
+  @UseGuards(AdminJwtGuard)
   @Get()
-  @UseGuards(JwtAuthGuard)
-  list(
+  findAll(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
   ) {
-    return this.customersService.adminFindAll({
+    return this.customersService.findAllAdmin({
       page: page ? parseInt(page) : undefined,
       limit: limit ? parseInt(limit) : undefined,
       search,
     });
   }
 
+  @UseGuards(AdminJwtGuard)
   @Get(':id')
-  @UseGuards(JwtAuthGuard)
   findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.customersService.adminFindOne(id);
+    return this.customersService.findOneAdmin(id);
   }
 }

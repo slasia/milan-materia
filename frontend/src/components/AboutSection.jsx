@@ -10,7 +10,7 @@ export default function AboutSection() {
           <div className="about-emblem">
             {!logoFailed ? (
               <img
-                src="http://localhost:3001/img/logo-full.png"
+                src={`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/img/logo-full.png`}
                 alt="Milán Matería"
                 className="about-emblem-logo"
                 onError={() => setLogoFailed(true)}
