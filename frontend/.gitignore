@@ -2,3 +2,10 @@ node_modules/
 dist/
 .vite/
 *.local
+
+# Variables de entorno — nunca subir al repo
+.env
+.env.dev
+.env.prod
+.env.local
+.env*.local
