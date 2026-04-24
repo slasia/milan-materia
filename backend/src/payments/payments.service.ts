@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { PromotionsService } from '../promotions/promotions.service';
 import { MailService } from '../mail/mail.service';
+import { ShippingService } from '../shipping/shipping.service';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import MercadoPagoConfig, { Preference, Payment } from 'mercadopago';
 
@@ -15,6 +16,7 @@ export class PaymentsService {
     private prisma: PrismaService,
     private promotionsService: PromotionsService,
     private mail: MailService,
+    private shipping: ShippingService,
   ) {
     this.mpClient = new MercadoPagoConfig({
       accessToken: this.configService.get<string>('MP_ACCESS_TOKEN') || '',
@@ -78,7 +80,11 @@ export class PaymentsService {
       if (result.valid) { discountAmt = result.discountAmount; promotionId = result.promotionId; }
     }
 
-    const total = Math.max(0, subtotal - discountAmt);
+    // Get shipping cost from Andreani (server-side, so it can't be spoofed)
+    const shippingQuote = await this.shipping.quoteForCheckout(shippingZip || '');
+    const shippingCost = shippingQuote.costCents; // in cents
+
+    const total = Math.max(0, subtotal - discountAmt + shippingCost);
 
     // Compose full shipping address string for storage
     const fullShippingAddress = [shippingAddress, shippingCity, shippingProvince, shippingZip]
@@ -112,6 +118,7 @@ export class PaymentsService {
           customerPhone,
           subtotal,
           discountAmt,
+          shippingCost,
           total,
           promoCode,
           promotionId,
@@ -126,7 +133,7 @@ export class PaymentsService {
     const backendUrl  = this.configService.get<string>('BACKEND_URL')  || 'http://localhost:3001';
 
     // MercadoPago prices are in whole ARS (not cents) — divide by 100
-    const mpItems = items.map((item) => {
+    const mpItems: any[] = items.map((item) => {
       const product = productMap.get(item.productId);
       return {
         id: String(product.id),
@@ -138,6 +145,18 @@ export class PaymentsService {
         unit_price: product.price / 100,
       };
     });
+
+    // Add shipping as a separate line item if Andreani returned a cost
+    if (shippingCost > 0) {
+      mpItems.push({
+        id: 'shipping',
+        title: `Envío por ${shippingQuote.provider}`,
+        description: shippingQuote.estimatedDays ?? 'Envío a domicilio',
+        quantity: 1,
+        currency_id: 'ARS',
+        unit_price: shippingCost / 100,
+      });
+    }
 
     const preferenceClient = new Preference(this.mpClient);
     let preference: any;
@@ -233,6 +252,7 @@ export class PaymentsService {
               total: order.total,
               subtotal: order.subtotal,
               discountAmt: order.discountAmt,
+              shippingCost: (order as any).shippingCost ?? 0,
               customerName: order.customerName || undefined,
               customerEmail: order.customerEmail,
               shippingAddress: order.shippingAddress || undefined,

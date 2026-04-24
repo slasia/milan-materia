@@ -107,6 +107,7 @@ model Order {
   customerPhone   String?
   subtotal        Int
   discountAmt     Int         @default(0)
+  shippingCost    Int         @default(0)
   total           Int
   promoCode       String?
   promotionId     Int?

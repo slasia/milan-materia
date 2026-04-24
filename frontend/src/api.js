@@ -52,6 +52,15 @@ export const createCheckout = (items, shippingData = {}) =>
     body: JSON.stringify({ items, ...shippingData }),
   }).then(handleResponse);
 
+// ── Shipping ──────────────────────────────────────────────────────────────────
+
+export const getShippingQuote = (postalCode) =>
+  fetch(`${API}/shipping/quote`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ postalCode }),
+  }).then(r => r.json()).catch(() => ({ available: false, costCents: 0, estimatedDays: null }));
+
 // ── Orders ───────────────────────────────────────────────────────────────────
 
 export const getOrder = (id) =>

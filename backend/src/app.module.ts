@@ -14,6 +14,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { OrdersModule } from './orders/orders.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { CustomersModule } from './customers/customers.module';
+import { ShippingModule } from './shipping/shipping.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { CustomersModule } from './customers/customers.module';
     OrdersModule,
     DashboardModule,
     CustomersModule,
+    ShippingModule,
   ],
   providers: [
     {

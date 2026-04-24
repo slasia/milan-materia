@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useCart } from '../store/cart';
 import { useAuth } from '../store/auth';
-import { imgUrl, formatPrice, createCheckout } from '../api';
+import { imgUrl, formatPrice, createCheckout, getShippingQuote } from '../api';
 import AuthModal from './AuthModal';
 import { ENABLE_AUTH } from '../config';
 
@@ -42,7 +42,26 @@ export default function CartDrawer({ open, onClose }) {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
-  const handleClose = () => { setStep('cart'); onClose(); };
+  // Shipping quote state
+  const [shippingQuote, setShippingQuote] = useState(null); // { available, costCents, estimatedDays, provider }
+  const [quotingShipping, setQuotingShipping] = useState(false);
+  const quoteTimerRef = useRef(null);
+
+  const handleClose = () => { setStep('cart'); onClose(); setShippingQuote(null); };
+
+  // Debounced shipping quote — fires 800ms after user stops typing the postal code
+  useEffect(() => {
+    const zip = form.shippingZip?.trim();
+    if (!zip || zip.length < 4) { setShippingQuote(null); return; }
+    clearTimeout(quoteTimerRef.current);
+    quoteTimerRef.current = setTimeout(async () => {
+      setQuotingShipping(true);
+      const quote = await getShippingQuote(zip);
+      setShippingQuote(quote);
+      setQuotingShipping(false);
+    }, 800);
+    return () => clearTimeout(quoteTimerRef.current);
+  }, [form.shippingZip]);
 
   // Open the shipping form, pre-filling from user profile if logged in
   const handleGoToForm = () => {
@@ -248,6 +267,29 @@ export default function CartDrawer({ open, onClose }) {
                       onChange={handleFieldChange} placeholder="7600" autoComplete="postal-code" />
                   </div>
                 </div>
+
+                {/* Shipping quote result */}
+                {quotingShipping && (
+                  <div className="cf-shipping-quote cf-shipping-loading">
+                    <span className="cf-shipping-spinner" /> Calculando costo de envío…
+                  </div>
+                )}
+                {!quotingShipping && shippingQuote?.available && (
+                  <div className="cf-shipping-quote cf-shipping-ok">
+                    <span className="cf-shipping-icon">🚚</span>
+                    <div>
+                      <div className="cf-shipping-label">Envío por Andreani</div>
+                      <div className="cf-shipping-detail">
+                        {formatPrice(shippingQuote.costCents)} estimado · {shippingQuote.estimatedDays}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {!quotingShipping && shippingQuote !== null && !shippingQuote.available && form.shippingZip?.trim().length >= 4 && (
+                  <div className="cf-shipping-quote cf-shipping-na">
+                    📦 El costo de envío se coordinará por separado al confirmar el pedido.
+                  </div>
+                )}
 
                 <div className="cf-field">
                   <label>Provincia *</label>

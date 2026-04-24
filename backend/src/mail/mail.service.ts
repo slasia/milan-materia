@@ -347,24 +347,28 @@ export class MailService {
     await this.send(`🧉 Tu código de verificación: ${data.code}`, html, data.email);
   }
 
-  // ── Buyer order confirmation ─────────────────────────────────────────────
+  // ── Buyer order confirmation (sent after MercadoPago payment approved) ────
   async sendBuyerOrderConfirmation(order: {
     id: number;
     total: number;
     subtotal: number;
     discountAmt: number;
+    shippingCost?: number;
     customerName?: string;
     customerEmail: string;
     shippingAddress?: string;
     items: { name: string; quantity: number; unitPrice: number }[];
   }) {
+    const orderNum = String(order.id).padStart(6, '0');
+    const firstName = order.customerName?.split(' ')[0] || '';
+
     const itemRows = order.items
       .map(
         (i) =>
           `<tr>
-            <td style="padding:8px 12px;border-bottom:1px solid #2a2318;">${i.name}</td>
-            <td style="padding:8px 12px;border-bottom:1px solid #2a2318;text-align:center;">${i.quantity}</td>
-            <td style="padding:8px 12px;border-bottom:1px solid #2a2318;text-align:right;color:#c8a96a;">${this.fmt(i.unitPrice * i.quantity)}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #2a2318;font-size:14px;">${i.name}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #2a2318;text-align:center;font-size:14px;">${i.quantity}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #2a2318;text-align:right;color:#c8a96a;font-size:14px;">${this.fmt(i.unitPrice * i.quantity)}</td>
           </tr>`,
       )
       .join('');
@@ -376,16 +380,19 @@ export class MailService {
          </tr>`
       : '';
 
-    const shippingBlock = order.shippingAddress
-      ? `<div style="background:#0a0804;border:1px solid #2a2318;border-radius:8px;padding:14px 18px;margin-bottom:20px;">
-           <p style="margin:0 0 4px;font-size:11px;color:#9a8870;letter-spacing:.1em;text-transform:uppercase;">Dirección de envío</p>
-           <p style="margin:0;font-size:14px;color:#fff;">${order.shippingAddress}</p>
-         </div>`
+    const shippingRow = (order.shippingCost ?? 0) > 0
+      ? `<tr>
+           <td style="padding:4px 0;color:#9a8870;font-size:13px;">Envío (Andreani)</td>
+           <td style="padding:4px 0;text-align:right;font-size:13px;color:#c8a96a;">${this.fmt(order.shippingCost)}</td>
+         </tr>`
       : '';
 
-    const greeting = order.customerName
-      ? `<p style="font-size:15px;color:#9a8870;margin:0 0 20px;">¡Hola <strong style="color:#fff;">${order.customerName}</strong>! Tu pedido fue confirmado exitosamente. 🎉</p>`
-      : `<p style="font-size:15px;color:#9a8870;margin:0 0 20px;">¡Tu pedido fue confirmado exitosamente! 🎉</p>`;
+    const addressBlock = order.shippingAddress
+      ? `<div style="background:#0a0804;border:1px solid #2a2318;border-radius:8px;padding:14px 18px;margin-bottom:24px;">
+           <p style="margin:0 0 4px;font-size:11px;color:#9a8870;letter-spacing:.1em;text-transform:uppercase;">📍 Dirección de envío</p>
+           <p style="margin:0;font-size:14px;color:#e0d4be;line-height:1.5;">${order.shippingAddress}</p>
+         </div>`
+      : '';
 
     const html = `
       ${this.baseStyle()}
@@ -394,16 +401,40 @@ export class MailService {
           <span class="logo">MM</span>
           <p class="sub">MILÁN MATERÍA</p>
         </div>
-        <div class="body">
-          <h2 style="color:#c8a96a;margin:0 0 8px;">Pedido <span style="font-family:monospace;">#${String(order.id).padStart(6, '0')}</span></h2>
-          ${greeting}
 
-          <div style="text-align:center;margin-bottom:24px;">
-            <span style="display:inline-block;padding:10px 28px;border-radius:24px;background:#4bb98c22;border:1px solid #4bb98c55;color:#4bb98c;font-size:16px;font-weight:700;letter-spacing:.06em;">
+        <div class="body">
+
+          <!-- Warm greeting -->
+          <h2 style="color:#c8a96a;margin:0 0 16px;font-size:22px;">
+            ¡Gracias por tu compra${firstName ? `, ${firstName}` : ''}! 🧉
+          </h2>
+
+          <p style="font-size:15px;color:#c8d4c0;margin:0 0 12px;line-height:1.7;">
+            Nos llena de alegría saber que un mate Milán Matería va a encontrar su lugar en tu ronda.
+            Cada pieza que hacemos lleva tiempo, cariño y mucho mate de por medio —
+            y es un honor que hayas elegido la nuestra.
+          </p>
+
+          <p style="font-size:14px;color:#9a8870;margin:0 0 28px;line-height:1.6;">
+            Tu pago fue acreditado y ya estamos preparando tu pedido con el mismo cuidado
+            con el que lo hicimos. En breve nos ponemos en contacto para coordinar la entrega. 🤝
+          </p>
+
+          <!-- Confirmed badge -->
+          <div style="text-align:center;margin-bottom:28px;">
+            <span style="display:inline-block;padding:10px 28px;border-radius:24px;background:#4bb98c22;border:1px solid #4bb98c55;color:#4bb98c;font-size:15px;font-weight:700;letter-spacing:.06em;">
               ✓ Pago confirmado
             </span>
           </div>
 
+          <!-- Order number -->
+          <div style="background:#0a0804;border:1px solid #2a2318;border-radius:8px;padding:12px 18px;margin-bottom:24px;text-align:center;">
+            <p style="margin:0 0 2px;font-size:11px;color:#9a8870;letter-spacing:.12em;text-transform:uppercase;">Número de orden</p>
+            <p style="margin:0;font-size:26px;font-weight:900;font-family:monospace;color:#c8a96a;letter-spacing:.1em;">#${orderNum}</p>
+            <p style="margin:4px 0 0;font-size:11px;color:#9a8870;">Guardá este número para cualquier consulta</p>
+          </div>
+
+          <!-- Items table -->
           <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:20px;">
             <thead>
               <tr style="background:#1a1510;">
@@ -415,31 +446,65 @@ export class MailService {
             <tbody>${itemRows}</tbody>
           </table>
 
+          <!-- Totals -->
           <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:24px;">
             ${discountRow}
+            ${shippingRow}
             <tr>
               <td colspan="2" style="padding-top:8px;border-top:1px solid #2a2318;"></td>
             </tr>
             <tr>
-              <td style="padding:6px 0;font-size:15px;font-weight:700;">Total pagado</td>
-              <td style="padding:6px 0;text-align:right;font-size:18px;font-weight:700;color:#c8a96a;">${this.fmt(order.total)}</td>
+              <td style="padding:6px 0;font-size:15px;font-weight:700;color:#fff;">Total pagado</td>
+              <td style="padding:6px 0;text-align:right;font-size:20px;font-weight:900;color:#c8a96a;">${this.fmt(order.total)}</td>
             </tr>
           </table>
 
-          ${shippingBlock}
+          <!-- Shipping address -->
+          ${addressBlock}
 
-          <p style="font-size:12px;color:#9a8870;text-align:center;margin:0 0 16px;">
-            Recibirás una notificación cuando tu pedido sea enviado.<br>
-            Ante dudas escribinos por WhatsApp o Instagram.
+          <!-- What's next -->
+          <div style="background:#0a0804;border-left:3px solid #c8a96a;padding:14px 18px;margin-bottom:24px;border-radius:0 8px 8px 0;">
+            <p style="margin:0 0 8px;font-size:12px;color:#c8a96a;letter-spacing:.08em;text-transform:uppercase;font-weight:700;">¿Qué sigue ahora?</p>
+            <p style="margin:0;font-size:13px;color:#9a8870;line-height:1.7;">
+              📦 Vamos a preparar tu pedido con dedicación.<br>
+              📬 Te avisamos cuando salga para entrega.<br>
+              💬 Si tenés alguna duda, escribinos sin problema.
+            </p>
+          </div>
+
+          <!-- Contact buttons -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+            <tr>
+              <td style="padding-right:8px;">
+                <a href="https://wa.me/5492236667793" style="display:block;text-align:center;padding:10px 0;background:#25d36622;border:1px solid #25d36655;border-radius:8px;color:#25d366;font-size:13px;font-weight:700;text-decoration:none;">
+                  💬 WhatsApp
+                </a>
+              </td>
+              <td style="padding-left:8px;">
+                <a href="https://instagram.com/milan.materia" style="display:block;text-align:center;padding:10px 0;background:#e1306c22;border:1px solid #e1306c55;border-radius:8px;color:#e1306c;font-size:13px;font-weight:700;text-decoration:none;">
+                  📷 Instagram
+                </a>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Closing -->
+          <p style="font-size:14px;color:#9a8870;text-align:center;margin:0 0 20px;line-height:1.7;font-style:italic;">
+            "Un mate compartido vale más que mil palabras." 🧉<br>
+            <span style="color:#c8a96a;font-style:normal;">— El equipo de Milán Matería</span>
           </p>
-          <a href="${this.config.get<string>('FRONTEND_URL') || 'http://localhost:5174'}" class="btn">Volver a la tienda</a>
+
+          <div style="text-align:center;">
+            <a href="${this.config.get<string>('FRONTEND_URL') || 'http://localhost:5174'}" class="btn">Ver más productos</a>
+          </div>
         </div>
+
         ${this.footer()}
       </div>
     `;
 
     await this.send(
-      `🧉 ¡Pedido #${String(order.id).padStart(6, '0')} confirmado! — ${this.fmt(order.total)}`,
+      `🧉 ¡Gracias por tu compra! Pedido #${orderNum} confirmado`,
       html,
       order.customerEmail,
     );
