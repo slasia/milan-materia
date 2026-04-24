@@ -189,20 +189,6 @@ export class PaymentsService {
       data: { mpPreferenceId: preference.id },
     });
 
-    // Send admin notification (fire-and-forget)
-    const fullOrder = await this.prisma.order.findUnique({
-      where: { id: order.id },
-      include: { items: { include: { product: { select: { name: true } } } } },
-    });
-    this.mail.sendNewOrder({
-      id: order.id,
-      total: order.total,
-      customerName,
-      customerEmail,
-      customerPhone,
-      items: fullOrder?.items ?? [],
-    }).catch(() => {});
-
     return {
       preferenceId: preference.id,
       url: preference.init_point,
@@ -263,6 +249,16 @@ export class PaymentsService {
               })),
             }).catch(() => {});
           }
+
+          // Send admin notification (only after confirmed payment)
+          this.mail.sendNewOrder({
+            id: order.id,
+            total: order.total,
+            customerName: order.customerName || undefined,
+            customerEmail: order.customerEmail || undefined,
+            customerPhone: order.customerPhone || undefined,
+            items: order.items,
+          }).catch(() => {});
         }
         console.log(`Order #${orderId} marked as PAID — stock decremented`);
       } else if (payment.status === 'rejected' || payment.status === 'cancelled') {
