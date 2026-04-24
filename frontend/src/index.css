@@ -2529,7 +2529,8 @@ footer a { color: var(--gold); }
 .checkout-form {
   display: flex;
   flex-direction: column;
-  height: calc(100% - 56px);
+  flex: 1;
+  min-height: 0; /* needed for flex children to scroll correctly */
   overflow: hidden;
 }
 

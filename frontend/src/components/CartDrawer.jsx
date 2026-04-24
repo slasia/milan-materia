@@ -46,6 +46,7 @@ export default function CartDrawer({ open, onClose }) {
   const [shippingQuote, setShippingQuote] = useState(null); // { available, costCents, estimatedDays, provider }
   const [quotingShipping, setQuotingShipping] = useState(false);
   const quoteTimerRef = useRef(null);
+  const scrollRef = useRef(null); // ref to the scrollable form area
 
   const handleClose = () => { setStep('cart'); onClose(); setShippingQuote(null); };
 
@@ -109,7 +110,12 @@ export default function CartDrawer({ open, onClose }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validate();
-    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs);
+      // Scroll back to top so the user can see the error messages
+      scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
 
     setLoading(true);
     try {
@@ -203,7 +209,7 @@ export default function CartDrawer({ open, onClose }) {
             </div>
 
             <form className="checkout-form" onSubmit={handleSubmit} noValidate>
-              <div className="checkout-form-scroll">
+              <div className="checkout-form-scroll" ref={scrollRef}>
 
                 <p className="checkout-section-title">Datos personales</p>
 

@@ -170,7 +170,7 @@ export default function ProductModal({ product, onClose }) {
               {added ? '✓ Agregado al carrito' : inStock ? 'Agregar al carrito' : 'Sin stock'}
             </button>
             {inCartNow && (
-              <button className="prod-modal-go-cart" onClick={openCart}>
+              <button className="prod-modal-go-cart" onClick={() => { onClose(); openCart(); }}>
                 🛒 Ir al carrito
               </button>
             )}
