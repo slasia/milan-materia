@@ -84,25 +84,50 @@ export class PaymentsController {
         throw new UnauthorizedException('Malformed x-signature');
       }
 
-      // Build manifest string as per MercadoPago docs
-      // xRequestId must be empty string (not "undefined") if header is absent
-      const manifest = `id:${signatureDataId};request-id:${xRequestId ?? ''};ts:${ts};`;
-      const expected = crypto
-        .createHmac('sha256', secret)
-        .update(manifest)
-        .digest('hex');
+      const trimmedSecret = secret.trim();
+      const id  = signatureDataId;
+      const rid = xRequestId ?? '';
 
-      console.log('Manifest          :', manifest);
-      console.log('Expected hash     :', expected);
+      // Try every known manifest variant — one of these must match
+      const candidates: Record<string, string> = {
+        'id;rid;ts (official)'  : `id:${id};request-id:${rid};ts:${ts};`,
+        'id;rid;ts (no trail)' : `id:${id};request-id:${rid};ts:${ts}`,
+        'id;ts (no rid)'       : `id:${id};ts:${ts};`,
+        'ts;id;rid'            : `ts:${ts};id:${id};request-id:${rid};`,
+        'ts;id'                : `ts:${ts};id:${id};`,
+        'plain concat'         : `${ts}${id}${rid}`,
+      };
+
+      const hmac = (key: string | Buffer, msg: string) =>
+        crypto.createHmac('sha256', key).update(msg).digest('hex');
+
+      const hexKey = Buffer.from(trimmedSecret, 'hex');
+
+      console.log('Secret length     :', trimmedSecret.length, '(hex bytes:', hexKey.length, ')');
       console.log('Received hash     :', v1);
-      console.log('Match             :', expected === v1);
+      console.log('--- Manifest candidates ---');
 
-      if (expected !== v1) {
-        console.warn('MP WEBHOOK — invalid signature, rejecting');
+      let matchedVariant: string | null = null;
+      for (const [label, msg] of Object.entries(candidates)) {
+        const withStr = hmac(trimmedSecret, msg);
+        const withHex = hmac(hexKey, msg);
+        const strMatch = withStr === v1;
+        const hexMatch = withHex === v1;
+        console.log(`  [${label}]`);
+        console.log(`    manifest : ${msg}`);
+        console.log(`    str key  : ${withStr} | match: ${strMatch}`);
+        console.log(`    hex key  : ${withHex} | match: ${hexMatch}`);
+        if ((strMatch || hexMatch) && !matchedVariant) matchedVariant = label;
+      }
+      console.log('---------------------------');
+
+      if (!matchedVariant) {
+        console.warn('MP WEBHOOK — no manifest variant matched the received signature');
+        console.warn('MP WEBHOOK — rejecting. Double-check MP_WEBHOOK_SECRET in .env vs MercadoPago portal');
         throw new UnauthorizedException('Invalid webhook signature');
       }
 
-      console.log('MP WEBHOOK — signature OK');
+      console.log(`MP WEBHOOK — signature OK with variant: "${matchedVariant}"`);
     } else {
       console.warn('MP WEBHOOK — MP_WEBHOOK_SECRET not set, skipping signature verification');
     }
