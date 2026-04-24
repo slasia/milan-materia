@@ -96,6 +96,9 @@ export default function ProductCard({ product, onClick }) {
         <div className="prod-sep"></div>
         <div className="prod-footer">
           <div className="prod-price-wrap">
+            {product.originalPrice > 0 && (
+              <div className="prod-original-price">{formatPrice(product.originalPrice)}</div>
+            )}
             <div className="prod-price">{formatPrice(product.price)}</div>
             {cuotas && <div className="prod-cuotas">{cuotas}</div>}
           </div>

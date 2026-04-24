@@ -2607,6 +2607,83 @@ footer a { color: var(--gold); }
   margin: 8px 0 0;
 }
 
+/* ─── Strikethrough / original price ───────────────────────────────────── */
+
+/* Product card */
+.prod-original-price {
+  font-size: 12px;
+  color: var(--muted);
+  text-decoration: line-through;
+  line-height: 1.2;
+}
+
+/* Product modal */
+.prod-modal-original-price {
+  font-size: 15px;
+  color: var(--muted);
+  text-decoration: line-through;
+  margin-bottom: 2px;
+}
+
+/* ─── Shipping quote (CartDrawer) ────────────────────────────────────────── */
+
+.cf-shipping-quote {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin: 4px 0 12px;
+}
+
+.cf-shipping-ok {
+  background: rgba(200,169,106,.1);
+  border: 1px solid rgba(200,169,106,.35);
+  color: #e8cb8a;
+}
+
+.cf-shipping-icon { font-size: 18px; flex-shrink: 0; }
+
+.cf-shipping-label {
+  font-weight: 600;
+  font-size: 13px;
+  color: #e8cb8a;
+}
+
+.cf-shipping-detail {
+  font-size: 12px;
+  color: rgba(255,255,255,.55);
+  margin-top: 1px;
+}
+
+.cf-shipping-na {
+  background: rgba(255,255,255,.04);
+  border: 1px dashed rgba(255,255,255,.12);
+  color: rgba(255,255,255,.45);
+  font-size: 12px;
+}
+
+.cf-shipping-loading {
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+  color: rgba(255,255,255,.4);
+  font-size: 12px;
+}
+
+/* Spinner */
+.cf-shipping-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(200,169,106,.25);
+  border-top-color: #c8a96a;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
 /* Mobile adjustments */
 @media (max-width: 480px) {
   .cf-row { grid-template-columns: 1fr; gap: 0; }

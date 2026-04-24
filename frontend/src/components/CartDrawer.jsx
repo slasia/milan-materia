@@ -319,10 +319,16 @@ export default function CartDrawer({ open, onClose }) {
                       <span>{formatPrice(item.price * item.quantity)}</span>
                     </div>
                   ))}
+                  {shippingQuote?.available && (
+                    <div className="checkout-summary-row">
+                      <span>🚚 Envío (Andreani)</span>
+                      <span>{formatPrice(shippingQuote.costCents)}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="checkout-summary-total">
                   <span>Total</span>
-                  <span>{formatPrice(total)}</span>
+                  <span>{formatPrice(total + (shippingQuote?.available ? shippingQuote.costCents : 0))}</span>
                 </div>
               </div>
 

@@ -156,6 +156,9 @@ export default function ProductModal({ product, onClose }) {
             <div className="prod-modal-desc">{product.description}</div>
           )}
           <div className="prod-modal-sep"></div>
+          {product.originalPrice > 0 && (
+            <div className="prod-modal-original-price">{formatPrice(product.originalPrice)}</div>
+          )}
           <div className="prod-modal-price">{formatPrice(product.price)}</div>
           {cuotas && <div className="prod-modal-cuotas">{cuotas}</div>}
           <div className="prod-modal-actions">
