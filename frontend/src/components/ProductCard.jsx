@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useCart } from '../store/cart';
 import { imgUrl, formatPrice } from '../api';
 
@@ -33,10 +33,21 @@ export default function ProductCard({ product, onClick }) {
   const [wished, setWished] = useState(false);
   const [flash, setFlash] = useState(false);
   const [imgFailed, setImgFailed] = useState(false);
+  const [cardImg, setCardImg] = useState(0);
 
   const inCartNow = cartItems.some(i => i.productId === product.id);
 
-  // reset flash after animation
+  // Build gallery: prefer images[], fall back to legacy imageUrl
+  const gallery = useMemo(() => {
+    if (product.images?.length > 0) return product.images.map(i => i.url);
+    if (product.imageUrl) return [product.imageUrl];
+    return [];
+  }, [product]);
+
+  // Reset index if product changes (e.g. filter re-renders same slot)
+  useEffect(() => { setCardImg(0); setImgFailed(false); }, [product.id]);
+
+  // Reset flash after animation
   useEffect(() => {
     if (!flash) return;
     const t = setTimeout(() => setFlash(false), 1200);
@@ -58,6 +69,16 @@ export default function ProductCard({ product, onClick }) {
     setWished(w => !w);
   };
 
+  const prevImg = (e) => {
+    e.stopPropagation();
+    setCardImg(i => (i - 1 + gallery.length) % gallery.length);
+  };
+
+  const nextImg = (e) => {
+    e.stopPropagation();
+    setCardImg(i => (i + 1) % gallery.length);
+  };
+
   const cuotas = product.price
     ? `3 cuotas de ${formatPrice(Math.round(product.price / 3))}`
     : null;
@@ -65,28 +86,54 @@ export default function ProductCard({ product, onClick }) {
   const catSlug = product.category?.slug ?? product.category ?? '';
   const catName = product.category?.name ?? (typeof product.category === 'string' ? product.category : '');
 
-  // Use first gallery image as cover, fall back to legacy imageUrl
-  const coverUrl = product.images?.[0]?.url || product.imageUrl;
+  const currentUrl = gallery[cardImg];
 
   return (
     <div className="prod-card" onClick={onClick} data-cat={catSlug}>
       <div className="prod-img-wrap">
-        {!imgFailed && coverUrl ? (
+        {!imgFailed && currentUrl ? (
           <img
-            src={imgUrl(coverUrl)}
-            alt={product.name}
+            src={imgUrl(currentUrl)}
+            alt={`${product.name}${gallery.length > 1 ? ` — ${cardImg + 1} / ${gallery.length}` : ''}`}
             onError={() => setImgFailed(true)}
           />
         ) : (
           <ProductPlaceholder name={catName} />
         )}
+
         {badge && (
           <div className={`badge ${badge.cls}`}>{badge.text}</div>
         )}
         <button className="prod-wish" onClick={handleWish} title="Lista de deseos">
           {wished ? '❤️' : '🤍'}
         </button>
+
+        {/* Mini carousel — only renders when there are multiple images */}
+        {gallery.length > 1 && (
+          <>
+            <button
+              className="card-nav-btn card-nav-prev"
+              onClick={prevImg}
+              aria-label="Imagen anterior"
+            >‹</button>
+            <button
+              className="card-nav-btn card-nav-next"
+              onClick={nextImg}
+              aria-label="Imagen siguiente"
+            >›</button>
+
+            <div className="card-dots">
+              {gallery.map((_, i) => (
+                <span
+                  key={i}
+                  className={`card-dot${i === cardImg ? ' active' : ''}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </div>
+
       <div className="prod-body">
         {catName && <div className="prod-cat">{catName}</div>}
         <div className="prod-name">{product.name}</div>
