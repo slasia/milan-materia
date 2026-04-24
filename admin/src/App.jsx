@@ -7,6 +7,7 @@ import Products from './pages/Products.jsx'
 import Promotions from './pages/Promotions.jsx'
 import Orders from './pages/Orders.jsx'
 import Customers from './pages/Customers.jsx'
+import Categories from './pages/Categories.jsx'
 
 function ProtectedRoute({ children }) {
   if (!getToken()) {
@@ -34,6 +35,7 @@ export default function App() {
           <Route path="promotions" element={<Promotions />} />
           <Route path="orders" element={<Orders />} />
           <Route path="customers" element={<Customers />} />
+          <Route path="categories" element={<Categories />} />
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

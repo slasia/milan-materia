@@ -67,24 +67,24 @@ model Promotion {
 }
 
 model Customer {
-  id               Int      @id @default(autoincrement())
-  email            String   @unique
-  password         String
-  name             String
-  phone            String?
-  address          String?
-  city             String?
-  province         String?
-  zip              String?
-  country          String   @default("Argentina")
+  id                      Int       @id @default(autoincrement())
+  email                   String    @unique
+  password                String
+  name                    String
+  phone                   String?
+  address                 String?
+  city                    String?
+  province                String?
+  zip                     String?
+  country                 String    @default("Argentina")
   emailVerified           Boolean   @default(false)
   verificationCode        String?
   verificationCodeExpires DateTime?
   passwordResetCode       String?
   passwordResetExpires    DateTime?
   createdAt               DateTime  @default(now())
-  updatedAt        DateTime @updatedAt
-  orders           Order[]
+  updatedAt               DateTime  @updatedAt
+  orders                  Order[]
 }
 
 model Order {

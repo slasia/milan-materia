@@ -42,7 +42,11 @@ export const uploadImage = (id, file) => {
     body: fd
   }).then(r => r.json())
 }
-export const getCategories = () => req('/categories')
+export const getCategories = () => req('/categories')           // active only (for product form)
+export const getAllCategories = () => req('/admin/categories')    // all (for categories management)
+export const createCategory = (data) => req('/admin/categories', { method: 'POST', body: JSON.stringify(data) })
+export const updateCategory = (id, data) => req('/admin/categories/' + id, { method: 'PATCH', body: JSON.stringify(data) })
+export const deleteCategory = (id) => req('/admin/categories/' + id, { method: 'DELETE' })
 export const getPromotions = () => req('/admin/promotions')
 export const createPromotion = (data) => req('/admin/promotions', { method: 'POST', body: JSON.stringify(data) })
 export const updatePromotion = (id, data) => req('/admin/promotions/' + id, { method: 'PATCH', body: JSON.stringify(data) })

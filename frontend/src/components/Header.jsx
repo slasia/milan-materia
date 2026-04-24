@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCart } from '../store/cart';
 import { useAuth } from '../store/auth';
 import MobileNav from './MobileNav';
 import AuthModal from './AuthModal';
 import { ENABLE_AUTH } from '../config';
+import { getCategories } from '../api';
 
 const IGIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -36,6 +37,13 @@ export default function Header({ onCartOpen, onMyOrders }) {
   const [mobOpen, setMobOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    getCategories()
+      .then(cats => setCategories(Array.isArray(cats) ? cats : []))
+      .catch(() => {});
+  }, []);
 
   const count = useCart(s => s.count());
   const customer = useAuth(s => s.customer);
@@ -85,13 +93,9 @@ export default function Header({ onCartOpen, onMyOrders }) {
 
           <nav className="main-nav" aria-label="Navegación principal">
             <ul>
-              <li><a href="#mates">Mates</a></li>
-              <li><a href="#imperiales">Imperiales</a></li>
-              <li><a href="#torpedos">Torpedos</a></li>
-              <li><a href="#algarrobo">Algarrobo</a></li>
-              <li><a href="#acero">Acero Inox</a></li>
-              <li><a href="#bombillas">Bombillas</a></li>
-              <li><a href="#yerbas">Yerbas</a></li>
+              {categories.map(cat => (
+                <li key={cat.id}><a href={`#${cat.slug}`}>{cat.name}</a></li>
+              ))}
               <li><a href="#contacto">Contacto</a></li>
             </ul>
           </nav>
@@ -176,7 +180,7 @@ export default function Header({ onCartOpen, onMyOrders }) {
         </div>
       </header>
 
-      <MobileNav open={mobOpen} onClose={closeMob} />
+      <MobileNav open={mobOpen} onClose={closeMob} categories={categories} />
 
       <AuthModal
         open={authOpen}

@@ -26,6 +26,18 @@ export default function ProductSection() {
       });
   }, []);
 
+  // Listen for hash changes so nav links filter by category
+  useEffect(() => {
+    function handleHash() {
+      const hash = window.location.hash.replace('#', '');
+      if (!hash || hash === 'contacto') return;
+      const matched = categories.find(c => c.slug === hash);
+      if (matched) handleFilter(matched.name);
+    }
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, [categories]);
+
   const handleFilter = (cat) => {
     if (filterBusy.current || cat === activecat) return;
     filterBusy.current = true;
@@ -49,7 +61,12 @@ export default function ProductSection() {
   const catNames = categories.map(c => (typeof c === 'string' ? c : c.name || c.slug || String(c)));
 
   return (
-    <section id="mates">
+    <section id="catalogo">
+      {/* Invisible anchors so header nav links (#slug) scroll to the right spot */}
+      {categories.map(cat => (
+        <span key={cat.id} id={cat.slug} style={{ position: 'absolute', marginTop: '-80px' }} />
+      ))}
+
       <div className="wrap sec">
         <div className="sec-hd">
           <div className="sec-eye">Nuestra Colección</div>

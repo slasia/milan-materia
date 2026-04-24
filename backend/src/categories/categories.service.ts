@@ -17,6 +17,15 @@ export class CategoriesService {
     });
   }
 
+  findAllAdmin() {
+    return this.prisma.category.findMany({
+      include: {
+        _count: { select: { products: true } },
+      },
+      orderBy: { sortOrder: 'asc' },
+    });
+  }
+
   async findOne(id: number) {
     const category = await this.prisma.category.findUnique({
       where: { id },

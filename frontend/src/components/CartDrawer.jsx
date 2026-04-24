@@ -17,6 +17,7 @@ function buildShippingForm(customer) {
   return {
     customerName: customer?.name || '',
     customerEmail: customer?.email || '',
+    customerEmailConfirm: customer?.email || '',
     customerPhone: customer?.phone || '',
     shippingAddress: customer?.address || '',
     shippingCity: customer?.city || '',
@@ -77,6 +78,8 @@ export default function CartDrawer({ open, onClose }) {
     if (!form.customerName?.trim())    e.customerName    = 'Requerido';
     if (!form.customerEmail?.trim())   e.customerEmail   = 'Requerido';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.customerEmail)) e.customerEmail = 'Email inválido';
+    if (!form.customerEmailConfirm?.trim()) e.customerEmailConfirm = 'Requerido';
+    else if (form.customerEmail?.trim() !== form.customerEmailConfirm?.trim()) e.customerEmailConfirm = 'Los emails no coinciden';
     if (!form.customerPhone?.trim())   e.customerPhone   = 'Requerido';
     if (!form.shippingAddress?.trim()) e.shippingAddress = 'Requerido';
     if (!form.shippingCity?.trim())    e.shippingCity    = 'Requerido';
@@ -192,19 +195,29 @@ export default function CartDrawer({ open, onClose }) {
                   {errors.customerName && <span className="cf-error">{errors.customerName}</span>}
                 </div>
 
-                <div className="cf-row">
-                  <div className="cf-field">
-                    <label>Email *</label>
-                    <input type="email" name="customerEmail" value={form.customerEmail || ''}
-                      onChange={handleFieldChange} placeholder="tu@email.com" autoComplete="email" />
-                    {errors.customerEmail && <span className="cf-error">{errors.customerEmail}</span>}
-                  </div>
-                  <div className="cf-field">
-                    <label>Teléfono *</label>
-                    <input type="tel" name="customerPhone" value={form.customerPhone || ''}
-                      onChange={handleFieldChange} placeholder="223 555-1234" autoComplete="tel" />
-                    {errors.customerPhone && <span className="cf-error">{errors.customerPhone}</span>}
-                  </div>
+                <div className="cf-field">
+                  <label>Email *</label>
+                  <input type="email" name="customerEmail" value={form.customerEmail || ''}
+                    onChange={handleFieldChange} placeholder="tu@email.com" autoComplete="email" />
+                  {errors.customerEmail && <span className="cf-error">{errors.customerEmail}</span>}
+                </div>
+
+                <div className="cf-field">
+                  <label>Confirmar email *</label>
+                  <input type="email" name="customerEmailConfirm" value={form.customerEmailConfirm || ''}
+                    onChange={handleFieldChange} placeholder="tu@email.com" autoComplete="off" />
+                  {errors.customerEmailConfirm && <span className="cf-error">{errors.customerEmailConfirm}</span>}
+                </div>
+
+                <p className="cf-email-note">
+                  📧 Tu email se usará para enviarte el comprobante y las actualizaciones de tu pedido.
+                </p>
+
+                <div className="cf-field">
+                  <label>Teléfono *</label>
+                  <input type="tel" name="customerPhone" value={form.customerPhone || ''}
+                    onChange={handleFieldChange} placeholder="223 555-1234" autoComplete="tel" />
+                  {errors.customerPhone && <span className="cf-error">{errors.customerPhone}</span>}
                 </div>
 
                 <p className="checkout-section-title" style={{ marginTop: '16px' }}>Dirección de envío</p>

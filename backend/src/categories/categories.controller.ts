@@ -29,6 +29,12 @@ export class CategoriesController {
   }
 
   @UseGuards(AdminJwtGuard)
+  @Get('admin/categories')
+  findAllAdmin() {
+    return this.categoriesService.findAllAdmin();
+  }
+
+  @UseGuards(AdminJwtGuard)
   @Post('admin/categories')
   create(@Body() createCategoryDto: CreateCategoryDto) {
     return this.categoriesService.create(createCategoryDto);

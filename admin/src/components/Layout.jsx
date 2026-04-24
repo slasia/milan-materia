@@ -6,6 +6,7 @@ import ToastContainer from './Toast.jsx'
 const PAGE_TITLES = {
   '/dashboard': 'Dashboard',
   '/products': 'Productos',
+  '/categories': 'Categorías',
   '/promotions': 'Promociones',
   '/orders': 'Pedidos',
   '/customers': 'Clientes',

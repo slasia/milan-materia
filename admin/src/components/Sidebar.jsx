@@ -31,6 +31,12 @@ const ClipboardIcon = () => (
   </svg>
 )
 
+const GridIcon = () => (
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 3h6v6H3zM11 3h6v6h-6zM3 11h6v6H3zM11 11h6v6h-6z"/>
+  </svg>
+)
+
 const UsersIcon = () => (
   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
     <path d="M13 11c2.21 0 4 1.79 4 4v1H3v-1c0-2.21 1.79-4 4-4h6z"/>
@@ -47,6 +53,7 @@ const LogoutIcon = () => (
 const navLinks = [
   { to: '/dashboard', label: 'Dashboard', icon: <DashIcon /> },
   { to: '/products', label: 'Productos', icon: <TagIcon /> },
+  { to: '/categories', label: 'Categorías', icon: <GridIcon /> },
   { to: '/promotions', label: 'Promociones', icon: <StarIcon /> },
   { to: '/orders', label: 'Pedidos', icon: <ClipboardIcon /> },
   { to: '/customers', label: 'Clientes', icon: <UsersIcon /> },
