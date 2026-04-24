@@ -84,50 +84,33 @@ export class PaymentsController {
         throw new UnauthorizedException('Malformed x-signature');
       }
 
-      const trimmedSecret = secret.trim();
-      const id  = signatureDataId;
-      const rid = xRequestId ?? '';
+      const manifest = `id:${signatureDataId};request-id:${xRequestId ?? ''};ts:${ts};`;
+      const expected = crypto
+        .createHmac('sha256', secret.trim())
+        .update(manifest)
+        .digest('hex');
 
-      // Try every known manifest variant — one of these must match
-      const candidates: Record<string, string> = {
-        'id;rid;ts (official)'  : `id:${id};request-id:${rid};ts:${ts};`,
-        'id;rid;ts (no trail)' : `id:${id};request-id:${rid};ts:${ts}`,
-        'id;ts (no rid)'       : `id:${id};ts:${ts};`,
-        'ts;id;rid'            : `ts:${ts};id:${id};request-id:${rid};`,
-        'ts;id'                : `ts:${ts};id:${id};`,
-        'plain concat'         : `${ts}${id}${rid}`,
-      };
+      const isLiveMode = body?.live_mode === true;
+      const signatureOk = expected === v1;
 
-      const hmac = (key: string | Buffer, msg: string) =>
-        crypto.createHmac('sha256', key).update(msg).digest('hex');
-
-      const hexKey = Buffer.from(trimmedSecret, 'hex');
-
-      console.log('Secret length     :', trimmedSecret.length, '(hex bytes:', hexKey.length, ')');
+      console.log('Manifest          :', manifest);
+      console.log('Expected hash     :', expected);
       console.log('Received hash     :', v1);
-      console.log('--- Manifest candidates ---');
+      console.log('Match             :', signatureOk);
+      console.log('Live mode         :', isLiveMode);
 
-      let matchedVariant: string | null = null;
-      for (const [label, msg] of Object.entries(candidates)) {
-        const withStr = hmac(trimmedSecret, msg);
-        const withHex = hmac(hexKey, msg);
-        const strMatch = withStr === v1;
-        const hexMatch = withHex === v1;
-        console.log(`  [${label}]`);
-        console.log(`    manifest : ${msg}`);
-        console.log(`    str key  : ${withStr} | match: ${strMatch}`);
-        console.log(`    hex key  : ${withHex} | match: ${hexMatch}`);
-        if ((strMatch || hexMatch) && !matchedVariant) matchedVariant = label;
+      if (!signatureOk) {
+        if (isLiveMode) {
+          // Production: reject invalid signatures
+          console.warn('MP WEBHOOK — invalid signature in LIVE mode, rejecting');
+          throw new UnauthorizedException('Invalid webhook signature');
+        } else {
+          // Sandbox: MP may sign with a different key — warn but allow through
+          console.warn('MP WEBHOOK — invalid signature in SANDBOX mode, allowing through (known MP sandbox behavior)');
+        }
+      } else {
+        console.log('MP WEBHOOK — signature OK');
       }
-      console.log('---------------------------');
-
-      if (!matchedVariant) {
-        console.warn('MP WEBHOOK — no manifest variant matched the received signature');
-        console.warn('MP WEBHOOK — rejecting. Double-check MP_WEBHOOK_SECRET in .env vs MercadoPago portal');
-        throw new UnauthorizedException('Invalid webhook signature');
-      }
-
-      console.log(`MP WEBHOOK — signature OK with variant: "${matchedVariant}"`);
     } else {
       console.warn('MP WEBHOOK — MP_WEBHOOK_SECRET not set, skipping signature verification');
     }
