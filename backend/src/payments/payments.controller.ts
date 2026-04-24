@@ -30,6 +30,18 @@ export class PaymentsController {
     @Body() body: any,
     @Req() req: Request,
   ) {
+    // ── LOG: full incoming request ──────────────────────────────────────────
+    console.log('═══════════════ MP WEBHOOK ═══════════════');
+    console.log('Query params :', { type, paymentId, dataId });
+    console.log('Body         :', JSON.stringify(body, null, 2));
+    console.log('Headers      :', {
+      'x-signature'  : req.headers['x-signature'],
+      'x-request-id' : req.headers['x-request-id'],
+      'content-type' : req.headers['content-type'],
+      'user-agent'   : req.headers['user-agent'],
+    });
+    // ───────────────────────────────────────────────────────────────────────
+
     // Verify HMAC-SHA256 signature when secret is configured
     const secret = this.configService.get<string>('MP_WEBHOOK_SECRET');
     if (secret) {
@@ -37,7 +49,10 @@ export class PaymentsController {
       const xRequestId = req.headers['x-request-id'] as string;
       const resolvedDataId = paymentId || dataId || body?.data?.id;
 
-      if (!xSignature) throw new UnauthorizedException('Missing x-signature');
+      if (!xSignature) {
+        console.warn('MP WEBHOOK — missing x-signature, rejecting');
+        throw new UnauthorizedException('Missing x-signature');
+      }
 
       // Extract ts and v1 from x-signature header: "ts=...,v1=..."
       const parts = Object.fromEntries(
@@ -46,7 +61,10 @@ export class PaymentsController {
       const ts = parts['ts'];
       const v1 = parts['v1'];
 
-      if (!ts || !v1) throw new UnauthorizedException('Malformed x-signature');
+      if (!ts || !v1) {
+        console.warn('MP WEBHOOK — malformed x-signature:', xSignature);
+        throw new UnauthorizedException('Malformed x-signature');
+      }
 
       // Build manifest string as per MercadoPago docs
       const manifest = `id:${resolvedDataId};request-id:${xRequestId};ts:${ts};`;
@@ -55,11 +73,22 @@ export class PaymentsController {
         .update(manifest)
         .digest('hex');
 
-      if (expected !== v1) throw new UnauthorizedException('Invalid webhook signature');
+      console.log('Signature check — manifest:', manifest);
+      console.log('Signature check — expected:', expected, '| received:', v1, '| match:', expected === v1);
+
+      if (expected !== v1) {
+        console.warn('MP WEBHOOK — invalid signature, rejecting');
+        throw new UnauthorizedException('Invalid webhook signature');
+      }
+    } else {
+      console.warn('MP WEBHOOK — MP_WEBHOOK_SECRET not set, skipping signature verification');
     }
 
     const resolvedType = type || body?.type;
     const resolvedId   = paymentId || dataId || body?.data?.id;
+    console.log(`MP WEBHOOK — resolved type: "${resolvedType}" | resolved id: "${resolvedId}"`);
+    console.log('══════════════════════════════════════════');
+
     return this.paymentsService.handleWebhook(resolvedType, resolvedId);
   }
 }

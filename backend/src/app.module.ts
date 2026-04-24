@@ -30,6 +30,7 @@ import { ShippingModule } from './shipping/shipping.module';
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
+      serveStaticOptions: { fallthrough: false, index: false },
     }),
     PrismaModule,
     MailModule,
