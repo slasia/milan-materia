@@ -42,6 +42,19 @@ export const uploadImage = (id, file) => {
     body: fd
   }).then(r => r.json())
 }
+
+export const addProductImage = (id, file) => {
+  const fd = new FormData()
+  fd.append('image', file)
+  return fetch(API + '/admin/products/' + id + '/images', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${localStorage.getItem('mm_admin_token')}` },
+    body: fd
+  }).then(r => r.json())
+}
+
+export const deleteProductImage = (productId, imageId) =>
+  req(`/admin/products/${productId}/images/${imageId}`, { method: 'DELETE' })
 export const getCategories = () => req('/categories')           // active only (for product form)
 export const getAllCategories = () => req('/admin/categories')    // all (for categories management)
 export const createCategory = (data) => req('/admin/categories', { method: 'POST', body: JSON.stringify(data) })

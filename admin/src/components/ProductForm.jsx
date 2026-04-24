@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import Modal from './Modal.jsx'
-import { createProduct, updateProduct, uploadImage, imgUrl } from '../api.js'
+import { createProduct, updateProduct, addProductImage, deleteProductImage, imgUrl } from '../api.js'
 import { useToast } from './Toast.jsx'
 
 const BADGE_TYPES = [
@@ -26,10 +26,13 @@ export default function ProductForm({ isOpen, onClose, product, categories, onSa
     stock: '0',
     featured: false,
   })
-  const [file, setFile] = useState(null)
-  const [preview, setPreview] = useState(null)
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState({})
+
+  // Image gallery state
+  const [galleryImages, setGalleryImages] = useState([])   // saved images from DB
+  const [pendingImages, setPendingImages] = useState([])   // new files queued for upload
+  const [deletingImgId, setDeletingImgId] = useState(null)
 
   useEffect(() => {
     if (isOpen) {
@@ -45,12 +48,12 @@ export default function ProductForm({ isOpen, onClose, product, categories, onSa
           stock: product.stock != null ? product.stock.toString() : '0',
           featured: product.featured ?? false,
         })
-        setPreview(imgUrl(product.imagePath || product.imageUrl || product.image))
+        setGalleryImages(product.images || [])
       } else {
         setForm({ name: '', description: '', price: '', originalPrice: '', categoryId: '', badge: '', badgeType: '', stock: '0', featured: false })
-        setPreview(null)
+        setGalleryImages([])
       }
-      setFile(null)
+      setPendingImages([])
       setErrors({})
     }
   }, [isOpen, product])
@@ -68,12 +71,35 @@ export default function ProductForm({ isOpen, onClose, product, categories, onSa
     return e
   }
 
-  function handleFileChange(e) {
-    const f = e.target.files[0]
-    if (!f) return
-    setFile(f)
-    const url = URL.createObjectURL(f)
-    setPreview(url)
+  // Pick new image files (multiple allowed)
+  function handleFilePick(e) {
+    const files = Array.from(e.target.files)
+    if (!files.length) return
+    const newPending = files.map(f => ({ file: f, preview: URL.createObjectURL(f) }))
+    setPendingImages(p => [...p, ...newPending])
+    e.target.value = ''
+  }
+
+  // Remove a pending (not-yet-uploaded) image from the queue
+  function removePending(idx) {
+    setPendingImages(p => {
+      URL.revokeObjectURL(p[idx].preview)
+      return p.filter((_, i) => i !== idx)
+    })
+  }
+
+  // Delete an already-saved image (calls API immediately for editing products)
+  async function handleDeleteSavedImage(img) {
+    if (!product?.id) return
+    setDeletingImgId(img.id)
+    try {
+      await deleteProductImage(product.id, img.id)
+      setGalleryImages(g => g.filter(i => i.id !== img.id))
+    } catch (e) {
+      showToast(e.message || 'Error al eliminar imagen', 'error')
+    } finally {
+      setDeletingImgId(null)
+    }
   }
 
   async function handleSubmit(e) {
@@ -102,8 +128,12 @@ export default function ProductForm({ isOpen, onClose, product, categories, onSa
         saved = await createProduct(payload)
       }
 
-      if (file && saved?.id) {
-        await uploadImage(saved.id, file)
+      // Upload any queued images
+      if (pendingImages.length > 0) {
+        const productId = isEditing ? product.id : saved?.id
+        if (productId) {
+          await Promise.all(pendingImages.map(p => addProductImage(productId, p.file)))
+        }
       }
 
       showToast(isEditing ? 'Producto actualizado' : 'Producto creado', 'success')
@@ -115,6 +145,8 @@ export default function ProductForm({ isOpen, onClose, product, categories, onSa
       setSaving(false)
     }
   }
+
+  const totalImages = galleryImages.length + pendingImages.length
 
   return (
     <Modal
@@ -237,27 +269,76 @@ export default function ProductForm({ isOpen, onClose, product, categories, onSa
           </label>
         </div>
 
+        {/* ── IMAGE GALLERY ── */}
         <div className="form-group">
-          <label className="form-label">Imagen</label>
+          <label className="form-label">
+            Imágenes
+            {totalImages > 0 && (
+              <span style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 400, marginLeft: 6 }}>
+                ({totalImages} imagen{totalImages > 1 ? 'es' : ''} · la primera es la portada)
+              </span>
+            )}
+          </label>
+
+          {/* Saved images from DB */}
+          {galleryImages.length > 0 && (
+            <div className="pf-gallery">
+              {galleryImages.map((img, i) => (
+                <div className="pf-gallery-item" key={img.id}>
+                  <img src={imgUrl(img.url)} alt={`Imagen ${i + 1}`} />
+                  {i === 0 && <span className="pf-img-tag pf-img-main">Portada</span>}
+                  <button
+                    type="button"
+                    className="pf-img-delete"
+                    onClick={() => handleDeleteSavedImage(img)}
+                    disabled={deletingImgId === img.id}
+                    title="Eliminar imagen"
+                  >
+                    {deletingImgId === img.id ? '…' : '×'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pending images (queued, not yet uploaded) */}
+          {pendingImages.length > 0 && (
+            <div className="pf-gallery" style={{ marginTop: galleryImages.length > 0 ? 8 : 0 }}>
+              {pendingImages.map((p, i) => (
+                <div className="pf-gallery-item pf-gallery-pending" key={i}>
+                  <img src={p.preview} alt={`Nueva ${i + 1}`} />
+                  <span className="pf-img-tag pf-img-new">Nueva</span>
+                  <button
+                    type="button"
+                    className="pf-img-delete"
+                    onClick={() => removePending(i)}
+                    title="Quitar"
+                  >×</button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <input
             ref={fileRef}
             type="file"
             accept="image/*"
+            multiple
             style={{ display: 'none' }}
-            onChange={handleFileChange}
+            onChange={handleFilePick}
           />
           <button
             type="button"
             className="btn btn-ghost btn-sm"
+            style={{ marginTop: totalImages > 0 ? 10 : 0 }}
             onClick={() => fileRef.current?.click()}
           >
-            {preview ? 'Cambiar imagen' : 'Seleccionar imagen'}
+            + Agregar imagen{totalImages > 0 ? '' : 'es'}
           </button>
-          {preview && (
-            <div className="image-preview-wrap">
-              <img src={preview} alt="Preview" className="image-preview" />
-              {file && <span style={{ fontSize: 11, color: 'var(--muted)' }}>{file.name}</span>}
-            </div>
+          {totalImages === 0 && (
+            <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+              Podés agregar varias imágenes. La primera se usará como portada.
+            </p>
           )}
         </div>
 

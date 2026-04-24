@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useCart } from '../store/cart';
 import { imgUrl, formatPrice } from '../api';
 
@@ -8,14 +8,49 @@ const WAIcon = () => (
   </svg>
 );
 
+function GalleryPlaceholder() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+      <div style={{
+        fontFamily: "'Josefin Sans', sans-serif",
+        fontSize: '80px',
+        fontWeight: 900,
+        background: 'linear-gradient(135deg,#f5d98a,#c8a96a,#8a6830)',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        backgroundClip: 'text',
+        lineHeight: 1,
+      }}>MM</div>
+      <div style={{ fontFamily: "'Josefin Sans', sans-serif", fontSize: '12px', letterSpacing: '0.2em', color: 'var(--gold)', textTransform: 'uppercase' }}>
+        Milán Matería
+      </div>
+    </div>
+  );
+}
+
 export default function ProductModal({ product, onClose }) {
   const addItem   = useCart(s => s.addItem);
   const openCart  = useCart(s => s.openCart);
   const cartItems = useCart(s => s.items);
   const [added, setAdded] = useState(false);
+  const [imgFailed, setImgFailed] = useState(false);
+  const [currentImg, setCurrentImg] = useState(0);
 
   const inCartNow = product ? cartItems.some(i => i.productId === product.id) : false;
-  const [imgFailed, setImgFailed] = useState(false);
+
+  // Build gallery: prefer images[], fall back to imageUrl
+  const gallery = useMemo(() => {
+    if (!product) return [];
+    if (product.images?.length > 0) return product.images.map(i => i.url);
+    if (product.imageUrl) return [product.imageUrl];
+    return [];
+  }, [product]);
+
+  // Reset carousel index when product changes
+  useEffect(() => {
+    setCurrentImg(0);
+    setImgFailed(false);
+  }, [product?.id]);
 
   useEffect(() => {
     if (product) {
@@ -27,10 +62,14 @@ export default function ProductModal({ product, onClose }) {
   }, [product]);
 
   useEffect(() => {
-    const handleKey = (e) => { if (e.key === 'Escape') onClose(); };
+    const handleKey = (e) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowLeft' && gallery.length > 1) setCurrentImg(i => (i - 1 + gallery.length) % gallery.length);
+      if (e.key === 'ArrowRight' && gallery.length > 1) setCurrentImg(i => (i + 1) % gallery.length);
+    };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [onClose]);
+  }, [onClose, gallery]);
 
   if (!product) return null;
 
@@ -39,9 +78,7 @@ export default function ProductModal({ product, onClose }) {
     ? `3 cuotas de ${formatPrice(Math.round(product.price / 3))} sin interés`
     : null;
 
-  const waMsg = encodeURIComponent(
-    `Hola! Quiero consultar por el producto: ${product.name} 🧉`
-  );
+  const waMsg = encodeURIComponent(`Hola! Quiero consultar por el producto: ${product.name} 🧉`);
   const waUrl = `https://wa.me/5492236667793?text=${waMsg}`;
 
   const handleAdd = () => {
@@ -50,37 +87,64 @@ export default function ProductModal({ product, onClose }) {
     setTimeout(() => setAdded(false), 1400);
   };
 
+  const prevImg = () => setCurrentImg(i => (i - 1 + gallery.length) % gallery.length);
+  const nextImg = () => setCurrentImg(i => (i + 1) % gallery.length);
+
   return (
     <div className="prod-modal-overlay open" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="prod-modal" role="dialog" aria-modal="true">
         <button className="prod-modal-close" onClick={onClose} aria-label="Cerrar">✕</button>
 
+        {/* Image column with carousel */}
         <div className="prod-modal-img-col">
-          {!imgFailed && product.imageUrl ? (
-            <img
-              src={imgUrl(product.imageUrl)}
-              alt={product.name}
-              onError={() => setImgFailed(true)}
-            />
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                fontFamily: "'Josefin Sans', sans-serif",
-                fontSize: '80px',
-                fontWeight: 900,
-                background: 'linear-gradient(135deg,#f5d98a,#c8a96a,#8a6830)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                lineHeight: 1,
-              }}>MM</div>
-              <div style={{ fontFamily: "'Josefin Sans', sans-serif", fontSize: '12px', letterSpacing: '0.2em', color: 'var(--gold)', textTransform: 'uppercase' }}>
-                Milán Matería
-              </div>
+          {gallery.length > 0 && !imgFailed ? (
+            <div className="prod-modal-gallery">
+              <img
+                key={currentImg}
+                src={imgUrl(gallery[currentImg])}
+                alt={`${product.name} — imagen ${currentImg + 1}`}
+                onError={() => setImgFailed(true)}
+                className="prod-modal-gallery-img"
+              />
+
+              {gallery.length > 1 && (
+                <>
+                  <button className="gallery-nav gallery-nav-prev" onClick={prevImg} aria-label="Anterior">‹</button>
+                  <button className="gallery-nav gallery-nav-next" onClick={nextImg} aria-label="Siguiente">›</button>
+
+                  {/* Dot indicators */}
+                  <div className="gallery-dots">
+                    {gallery.map((_, i) => (
+                      <button
+                        key={i}
+                        className={`gallery-dot${i === currentImg ? ' active' : ''}`}
+                        onClick={() => setCurrentImg(i)}
+                        aria-label={`Imagen ${i + 1}`}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Thumbnail strip */}
+                  <div className="gallery-thumbs">
+                    {gallery.map((url, i) => (
+                      <button
+                        key={i}
+                        className={`gallery-thumb${i === currentImg ? ' active' : ''}`}
+                        onClick={() => setCurrentImg(i)}
+                      >
+                        <img src={imgUrl(url)} alt={`Miniatura ${i + 1}`} />
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
+          ) : (
+            <GalleryPlaceholder />
           )}
         </div>
 
+        {/* Info column */}
         <div className="prod-modal-info-col">
           {product.category && (
             <div className="prod-modal-badge">
@@ -107,12 +171,7 @@ export default function ProductModal({ product, onClose }) {
                 🛒 Ir al carrito
               </button>
             )}
-            <a
-              href={waUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="prod-modal-wa"
-            >
+            <a href={waUrl} target="_blank" rel="noreferrer" className="prod-modal-wa">
               <WAIcon />
               Consultar por WhatsApp
             </a>

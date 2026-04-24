@@ -65,12 +65,15 @@ export default function ProductCard({ product, onClick }) {
   const catSlug = product.category?.slug ?? product.category ?? '';
   const catName = product.category?.name ?? (typeof product.category === 'string' ? product.category : '');
 
+  // Use first gallery image as cover, fall back to legacy imageUrl
+  const coverUrl = product.images?.[0]?.url || product.imageUrl;
+
   return (
     <div className="prod-card" onClick={onClick} data-cat={catSlug}>
       <div className="prod-img-wrap">
-        {!imgFailed && product.imageUrl ? (
+        {!imgFailed && coverUrl ? (
           <img
-            src={imgUrl(product.imageUrl)}
+            src={imgUrl(coverUrl)}
             alt={product.name}
             onError={() => setImgFailed(true)}
           />

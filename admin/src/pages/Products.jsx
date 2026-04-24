@@ -140,7 +140,7 @@ export default function Products() {
               </thead>
               <tbody>
                 {products.map(product => {
-                  const imgSrc = imgUrl(product.imagePath || product.image)
+                  const imgSrc = imgUrl(product.images?.[0]?.url || product.imageUrl)
                   const catName = product.category?.name || categories.find(c => c.id === product.categoryId)?.name || '—'
                   return (
                     <tr key={product.id}>
