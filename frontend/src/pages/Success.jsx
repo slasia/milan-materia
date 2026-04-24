@@ -2,6 +2,77 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { getOrder, formatPrice } from '../api';
 import { useCart } from '../store/cart';
+import { ENABLE_AUTH } from '../config';
+
+function padId(id) {
+  return String(id).padStart(6, '0');
+}
+
+function Comprobante({ order, orderId }) {
+  const items = order?.items || [];
+  const total = order?.total || 0;
+  const now = new Date();
+  const fecha = now.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const hora  = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+
+  return (
+    <div className="receipt">
+      <div className="receipt-header">
+        <div className="receipt-logo">MM</div>
+        <div className="receipt-brand">MILÁN MATERÍA</div>
+        <div className="receipt-sub">Mar del Plata · Argentina</div>
+      </div>
+
+      <div className="receipt-divider">- - - - - - - - - - - - - - - - - -</div>
+
+      <div className="receipt-order-num">
+        <div className="receipt-order-label">NÚMERO DE ORDEN</div>
+        <div className="receipt-order-val">#{padId(order?.id || orderId)}</div>
+      </div>
+
+      <div className="receipt-divider">- - - - - - - - - - - - - - - - - -</div>
+
+      <div className="receipt-meta">
+        <span>Fecha: {fecha}</span>
+        <span>Hora: {hora}</span>
+      </div>
+
+      {items.length > 0 && (
+        <>
+          <div className="receipt-items">
+            {items.map((item, i) => (
+              <div className="receipt-item" key={i}>
+                <span className="receipt-item-name">
+                  {item.name || item.product?.name || `Producto #${item.productId}`}
+                  {item.quantity > 1 ? ` ×${item.quantity}` : ''}
+                </span>
+                <span className="receipt-item-price">
+                  {formatPrice((item.unitPrice || item.price || 0) * (item.quantity || 1))}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="receipt-divider">- - - - - - - - - - - - - - - - - -</div>
+          <div className="receipt-total-row">
+            <span>TOTAL PAGADO</span>
+            <span>{formatPrice(total)}</span>
+          </div>
+        </>
+      )}
+
+      <div className="receipt-divider">- - - - - - - - - - - - - - - - - -</div>
+
+      <div className="receipt-notice">
+        ⚠ Guardá este comprobante.<br />
+        En caso de consulta o reclamo<br />
+        mencioná tu número de orden.
+      </div>
+
+      <div className="receipt-divider">- - - - - - - - - - - - - - - - - -</div>
+      <div className="receipt-thanks">¡Gracias por tu compra! 🧉</div>
+    </div>
+  );
+}
 
 export default function Success() {
   const [searchParams] = useSearchParams();
@@ -14,70 +85,27 @@ export default function Success() {
     clear();
     if (orderId) {
       getOrder(orderId)
-        .then(data => {
-          setOrder(data);
-          setLoading(false);
-        })
-        .catch(() => {
-          setLoading(false);
-        });
+        .then(data => { setOrder(data); setLoading(false); })
+        .catch(() => setLoading(false));
     } else {
       setLoading(false);
     }
   }, [orderId]);
 
-  const items = order?.items || order?.orderItems || [];
-  const total = order?.total || order?.totalAmount || 0;
-  const status = order?.status || 'confirmado';
-
   return (
     <div className="success-page">
       <div className="success-card">
-        <div className="success-icon">🧉</div>
-        <h1>¡Gracias por tu compra!</h1>
+        <div className="success-icon">✅</div>
+        <h1>¡Pago confirmado!</h1>
+        <p className="success-subtitle">
+          Tu pedido fue recibido con éxito. Te contactaremos para coordinar la entrega.
+        </p>
 
         {loading ? (
-          <p>Cargando detalle de tu pedido...</p>
-        ) : order ? (
-          <>
-            <p>
-              Tu pedido <strong style={{ color: 'var(--gold)' }}>#{order.id || orderId}</strong> fue{' '}
-              recibido con éxito. Estado: <strong style={{ color: 'var(--gold)' }}>{status}</strong>
-            </p>
-            <p>
-              Te contactaremos por WhatsApp para coordinar la entrega. ¡Gracias por elegirnos!
-            </p>
-
-            {items.length > 0 && (
-              <div className="success-items">
-                {items.map((item, i) => (
-                  <div className="success-item" key={i}>
-                    <span className="success-item-name">
-                      {item.name || item.productName || `Producto #${item.productId}`}
-                      {item.quantity > 1 ? ` × ${item.quantity}` : ''}
-                    </span>
-                    <span>{formatPrice((item.price || item.unitPrice || 0) * (item.quantity || 1))}</span>
-                  </div>
-                ))}
-                <div className="success-total">
-                  <span>Total pagado</span>
-                  <span>{formatPrice(total)}</span>
-                </div>
-              </div>
-            )}
-          </>
-        ) : (
-          <>
-            <p>
-              Tu pago fue procesado correctamente. Te contactaremos a la brevedad para confirmar tu pedido.
-            </p>
-            {orderId && (
-              <p style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '8px' }}>
-                Referencia: {orderId}
-              </p>
-            )}
-          </>
-        )}
+          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>Cargando detalle...</p>
+        ) : (order || orderId) ? (
+          <Comprobante order={order} orderId={orderId} />
+        ) : null}
 
         <Link to="/" className="success-back">
           Volver a la tienda

@@ -1495,6 +1495,123 @@ footer a { color: var(--gold); }
 }
 .success-back:hover { filter: brightness(1.1); transform: translateY(-2px); }
 
+.success-subtitle {
+  font-size: 14px;
+  color: rgba(255,255,255,0.5);
+  margin: -8px 0 20px;
+}
+
+/* ── Comprobante / Receipt ────────────────────────────────────────────────── */
+.receipt {
+  background: #fff;
+  color: #1a1208;
+  border-radius: 4px;
+  padding: 24px 20px;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto 8px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+}
+.receipt-header {
+  text-align: center;
+  margin-bottom: 4px;
+}
+.receipt-logo {
+  font-family: 'Josefin Sans', sans-serif;
+  font-size: 32px;
+  font-weight: 900;
+  color: #1a1208;
+  letter-spacing: 0.06em;
+}
+.receipt-brand {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: #1a1208;
+}
+.receipt-sub {
+  font-size: 10px;
+  color: #9a8870;
+  margin-top: 2px;
+}
+.receipt-divider {
+  color: #9a8870;
+  font-size: 11px;
+  text-align: center;
+  margin: 10px 0;
+  letter-spacing: 0.02em;
+  overflow: hidden;
+}
+.receipt-order-num {
+  text-align: center;
+  margin: 4px 0;
+}
+.receipt-order-label {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: #9a8870;
+  margin-bottom: 4px;
+}
+.receipt-order-val {
+  font-size: 28px;
+  font-weight: 900;
+  color: #1a1208;
+  letter-spacing: 0.06em;
+}
+.receipt-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #6b5c44;
+  margin: 4px 0;
+}
+.receipt-items {
+  margin: 4px 0;
+}
+.receipt-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 12px;
+  color: #2a1f0f;
+}
+.receipt-item-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.receipt-item-price {
+  flex-shrink: 0;
+  font-weight: 600;
+}
+.receipt-total-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 900;
+  color: #1a1208;
+  letter-spacing: 0.04em;
+  padding: 4px 0;
+}
+.receipt-notice {
+  text-align: center;
+  font-size: 11px;
+  color: #6b5c44;
+  line-height: 1.7;
+  padding: 4px 0;
+}
+.receipt-thanks {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a1208;
+  letter-spacing: 0.04em;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 960px) {
   nav.main-nav { display: none; }

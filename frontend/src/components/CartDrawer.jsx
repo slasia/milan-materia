@@ -3,6 +3,7 @@ import { useCart } from '../store/cart';
 import { useAuth } from '../store/auth';
 import { imgUrl, formatPrice, createCheckout } from '../api';
 import AuthModal from './AuthModal';
+import { ENABLE_AUTH } from '../config';
 
 const PROVINCES = [
   'Buenos Aires', 'CABA', 'Catamarca', 'Chaco', 'Chubut', 'Córdoba',
@@ -49,10 +50,10 @@ export default function CartDrawer({ open, onClose }) {
     setStep('form');
   };
 
-  // If not logged in, open AuthModal first, then proceed to checkout form on success
+  // Si ENABLE_AUTH está activo y el usuario no está logueado, pedir login primero
   const handleCheckoutClick = () => {
     if (items.length === 0) return;
-    if (!isLoggedIn) {
+    if (ENABLE_AUTH && !isLoggedIn) {
       setAuthOpen(true);
       return;
     }
@@ -156,7 +157,7 @@ export default function CartDrawer({ open, onClose }) {
                 <span>Total</span>
                 <span>{formatPrice(total)}</span>
               </div>
-              {!isLoggedIn && items.length > 0 && (
+              {ENABLE_AUTH && !isLoggedIn && items.length > 0 && (
                 <p className="cart-login-hint">Iniciá sesión para continuar con la compra</p>
               )}
               <button
@@ -164,7 +165,7 @@ export default function CartDrawer({ open, onClose }) {
                 onClick={handleCheckoutClick}
                 disabled={items.length === 0 || loading}
               >
-                {isLoggedIn ? 'Finalizar compra' : 'Iniciar sesión y comprar'}
+                {ENABLE_AUTH && !isLoggedIn ? 'Iniciar sesión y comprar' : 'Finalizar compra'}
               </button>
             </div>
           </>
@@ -208,7 +209,7 @@ export default function CartDrawer({ open, onClose }) {
 
                 <p className="checkout-section-title" style={{ marginTop: '16px' }}>Dirección de envío</p>
 
-                {customer?.address && (
+                {ENABLE_AUTH && customer?.address && (
                   <p className="cf-prefill-note">
                     ✓ Pre-completado con tu domicilio guardado. Podés modificarlo si el envío es a otra dirección.
                   </p>

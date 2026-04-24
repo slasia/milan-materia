@@ -12,6 +12,7 @@ import CartDrawer from '../components/CartDrawer';
 import WhatsAppFAB from '../components/WhatsAppFAB';
 import MyOrders from './MyOrders';
 import { useCart } from '../store/cart';
+import { ENABLE_AUTH } from '../config';
 
 export default function Home() {
   const cartOpen   = useCart(s => s.open);
@@ -35,7 +36,7 @@ export default function Home() {
       <Footer />
       <CartDrawer open={cartOpen} onClose={closeCart} />
       <WhatsAppFAB />
-      {myOrdersOpen && <MyOrders onClose={() => setMyOrdersOpen(false)} />}
+      {ENABLE_AUTH && myOrdersOpen && <MyOrders onClose={() => setMyOrdersOpen(false)} />}
     </>
   );
 }

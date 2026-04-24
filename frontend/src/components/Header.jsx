@@ -3,6 +3,7 @@ import { useCart } from '../store/cart';
 import { useAuth } from '../store/auth';
 import MobileNav from './MobileNav';
 import AuthModal from './AuthModal';
+import { ENABLE_AUTH } from '../config';
 
 const IGIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -113,8 +114,8 @@ export default function Header({ onCartOpen, onMyOrders }) {
               <WAIcon />
             </a>
 
-            {/* Auth area */}
-            {isLoggedIn ? (
+            {/* Auth area — solo visible cuando ENABLE_AUTH=true */}
+            {ENABLE_AUTH && isLoggedIn ? (
               <div className="ha-user-wrap">
                 <button className="ha-user-btn" onClick={() => setUserMenuOpen(o => !o)} title="Mi cuenta">
                   <UserIcon />
@@ -153,12 +154,12 @@ export default function Header({ onCartOpen, onMyOrders }) {
                   </>
                 )}
               </div>
-            ) : (
+            ) : ENABLE_AUTH ? (
               <button className="ha-login-btn" onClick={() => setAuthOpen(true)} title="Iniciar sesión">
                 <UserIcon />
                 <span>Ingresar</span>
               </button>
-            )}
+            ) : null}
 
             <button
               className="ha-cart"
