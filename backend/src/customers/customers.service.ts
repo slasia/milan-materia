@@ -12,7 +12,6 @@ import { RegisterCustomerDto } from './dto/register-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import * as bcrypt from 'bcrypt';
 
-// Verification code expires in 24 hours
 const CODE_TTL_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
@@ -22,8 +21,6 @@ export class CustomersService {
     private jwtService: JwtService,
     private mail: MailService,
   ) {}
-
-  // ── Helpers ──────────────────────────────────────────────────────────────
 
   private generateCode(): string {
     return Math.floor(10000 + Math.random() * 90000).toString();
@@ -39,11 +36,13 @@ export class CustomersService {
     return safe;
   }
 
-  // ── Register (BUG-09 fixed: typed DTO) ──────────────────────────────────
-
   async register(dto: RegisterCustomerDto) {
+    console.log(`[SHOP] Customer register attempt — email: ${dto.email}`);
     const existing = await this.prisma.customer.findUnique({ where: { email: dto.email } });
-    if (existing) throw new ConflictException('El email ya está registrado');
+    if (existing) {
+      console.warn(`[SHOP] Register failed — email already exists: ${dto.email}`);
+      throw new ConflictException('El email ya está registrado');
+    }
 
     const hashed = await bcrypt.hash(dto.password, 10);
     const verificationCode = this.generateCode();
@@ -65,59 +64,62 @@ export class CustomersService {
       },
     });
 
-    this.mail.sendEmailVerification({
-      email: customer.email,
-      name: customer.name,
-      code: verificationCode,
-    }).catch(() => {});
+    console.log(`[SHOP] Customer registered — id: ${customer.id}, email: ${customer.email}`);
+    this.mail.sendEmailVerification({ email: customer.email, name: customer.name, code: verificationCode }).catch(() => {});
 
     const token = this.signToken(customer.id, customer.email);
-    return {
-      access_token: token,
-      customer: this.safeCustomer(customer),
-      requiresVerification: true,
-    };
+    return { access_token: token, customer: this.safeCustomer(customer), requiresVerification: true };
   }
-
-  // ── Login ─────────────────────────────────────────────────────────────────
 
   async login(email: string, password: string) {
+    console.log(`[SHOP] Customer login attempt — email: ${email}`);
     const customer = await this.prisma.customer.findUnique({ where: { email } });
-    if (!customer) throw new UnauthorizedException('Credenciales inválidas');
+    if (!customer) {
+      console.warn(`[SHOP] Login failed — customer not found: ${email}`);
+      throw new UnauthorizedException('Credenciales inválidas');
+    }
 
     const valid = await bcrypt.compare(password, customer.password);
-    if (!valid) throw new UnauthorizedException('Credenciales inválidas');
+    if (!valid) {
+      console.warn(`[SHOP] Login failed — wrong password for: ${email}`);
+      throw new UnauthorizedException('Credenciales inválidas');
+    }
 
+    console.log(`[SHOP] Customer login successful — id: ${customer.id}, email: ${customer.email}`);
     const token = this.signToken(customer.id, customer.email);
-    return {
-      access_token: token,
-      customer: this.safeCustomer(customer),
-    };
+    return { access_token: token, customer: this.safeCustomer(customer) };
   }
 
-  // ── Email Verification (BUG-10 fixed: expiry check) ─────────────────────
-
   async verifyEmail(customerId: number, code: string) {
+    console.log(`[SHOP] Email verification attempt — customer #${customerId}`);
     const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
     if (!customer) throw new NotFoundException('Usuario no encontrado');
-    if (customer.emailVerified) return { message: 'Email ya verificado', emailVerified: true };
+    if (customer.emailVerified) {
+      console.log(`[SHOP] Email already verified — customer #${customerId}`);
+      return { message: 'Email ya verificado', emailVerified: true };
+    }
 
-    // Check expiry
     if (!customer.verificationCodeExpires || customer.verificationCodeExpires < new Date()) {
+      console.warn(`[SHOP] Verification code expired — customer #${customerId}`);
       throw new BadRequestException('El código expiró. Solicitá uno nuevo.');
     }
 
-    if (customer.verificationCode !== code) throw new BadRequestException('Código incorrecto');
+    if (customer.verificationCode !== code) {
+      console.warn(`[SHOP] Wrong verification code — customer #${customerId}`);
+      throw new BadRequestException('Código incorrecto');
+    }
 
     const updated = await this.prisma.customer.update({
       where: { id: customerId },
       data: { emailVerified: true, verificationCode: null, verificationCodeExpires: null },
     });
 
+    console.log(`[SHOP] Email verified successfully — customer #${customerId}`);
     return { message: 'Email verificado correctamente', emailVerified: true, customer: this.safeCustomer(updated) };
   }
 
   async resendVerification(customerId: number) {
+    console.log(`[SHOP] Resend verification — customer #${customerId}`);
     const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
     if (!customer) throw new NotFoundException('Usuario no encontrado');
     if (customer.emailVerified) return { message: 'Email ya verificado' };
@@ -131,19 +133,19 @@ export class CustomersService {
     });
 
     this.mail.sendEmailVerification({ email: customer.email, name: customer.name, code }).catch(() => {});
-
+    console.log(`[SHOP] Verification code resent to ${customer.email}`);
     return { message: 'Código reenviado a ' + customer.email };
   }
 
-  // ── Profile (BUG-04 fixed: email bloqueado; BUG-07 fixed: whitelist DTO) ─
-
   async getProfile(customerId: number) {
+    console.log(`[SHOP] Fetching profile — customer #${customerId}`);
     const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
     if (!customer) throw new NotFoundException('Usuario no encontrado');
     return this.safeCustomer(customer);
   }
 
   async updateProfile(customerId: number, dto: UpdateCustomerDto) {
+    console.log(`[SHOP] Updating profile — customer #${customerId}, fields: ${Object.keys(dto).join(', ')}`);
     const data: any = {};
     if (dto.name     !== undefined) data.name     = dto.name;
     if (dto.phone    !== undefined) data.phone    = dto.phone;
@@ -152,16 +154,15 @@ export class CustomersService {
     if (dto.province !== undefined) data.province = dto.province;
     if (dto.zip      !== undefined) data.zip      = dto.zip;
     if (dto.password !== undefined) data.password = await bcrypt.hash(dto.password, 10);
-    // email, emailVerified, id, createdAt, verificationCode are intentionally excluded
 
     const updated = await this.prisma.customer.update({ where: { id: customerId }, data });
+    console.log(`[SHOP] Profile updated — customer #${customerId}`);
     return this.safeCustomer(updated);
   }
 
-  // ── Orders ────────────────────────────────────────────────────────────────
-
   async getOrders(customerId: number) {
-    return this.prisma.order.findMany({
+    console.log(`[SHOP] Fetching orders — customer #${customerId}`);
+    const orders = await this.prisma.order.findMany({
       where: { customerId },
       include: {
         items: {
@@ -170,14 +171,15 @@ export class CustomersService {
       },
       orderBy: { createdAt: 'desc' },
     });
+    console.log(`[SHOP] Returned ${orders.length} orders for customer #${customerId}`);
+    return orders;
   }
-
-  // ── Admin — list & detail (BUG-05 fixed) ────────────────────────────────
 
   async findAllAdmin(params: { page?: number; limit?: number; search?: string }) {
     const page  = params.page  || 1;
     const limit = params.limit || 20;
     const skip  = (page - 1) * limit;
+    console.log(`[ADMIN] Fetching customers — page: ${page}, search: "${params.search ?? ''}"`);
 
     const where: any = {};
     if (params.search) {
@@ -203,10 +205,12 @@ export class CustomersService {
       this.prisma.customer.count({ where }),
     ]);
 
+    console.log(`[ADMIN] Returned ${customers.length} customers (total: ${total})`);
     return { data: customers, meta: { total, page, limit, pages: Math.ceil(total / limit) } };
   }
 
   async findOneAdmin(id: number) {
+    console.log(`[ADMIN] Fetching customer detail — id: ${id}`);
     const customer = await this.prisma.customer.findUnique({
       where: { id },
       select: {
@@ -223,19 +227,24 @@ export class CustomersService {
         },
       },
     });
-    if (!customer) throw new NotFoundException('Cliente no encontrado');
+    if (!customer) {
+      console.warn(`[ADMIN] Customer #${id} not found`);
+      throw new NotFoundException('Cliente no encontrado');
+    }
+    console.log(`[ADMIN] Customer #${id} found — email: ${customer.email}`);
     return customer;
   }
 
-  // ── Password recovery ─────────────────────────────────────────────────────
-
   async forgotPassword(email: string) {
+    console.log(`[SHOP] Forgot password request — email: ${email}`);
     const customer = await this.prisma.customer.findUnique({ where: { email } });
-    // Always respond OK — never reveal whether the email exists
-    if (!customer) return { message: 'Si el email está registrado, recibirás un código.' };
+    if (!customer) {
+      console.log(`[SHOP] Forgot password — email not found (silenced): ${email}`);
+      return { message: 'Si el email está registrado, recibirás un código.' };
+    }
 
     const code = this.generateCode();
-    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour TTL
+    const expires = new Date(Date.now() + 60 * 60 * 1000);
 
     await this.prisma.customer.update({
       where: { id: customer.id },
@@ -243,16 +252,19 @@ export class CustomersService {
     });
 
     this.mail.sendPasswordReset({ email: customer.email, name: customer.name, code }).catch(() => {});
-
+    console.log(`[SHOP] Password reset code sent to ${email}`);
     return { message: 'Si el email está registrado, recibirás un código.' };
   }
 
   async resetPassword(email: string, code: string, newPassword: string) {
+    console.log(`[SHOP] Reset password attempt — email: ${email}`);
     const customer = await this.prisma.customer.findUnique({ where: { email } });
     if (!customer || customer.passwordResetCode !== code) {
+      console.warn(`[SHOP] Reset password failed — invalid code for: ${email}`);
       throw new BadRequestException('Código inválido o expirado');
     }
     if (!customer.passwordResetExpires || customer.passwordResetExpires < new Date()) {
+      console.warn(`[SHOP] Reset password failed — code expired for: ${email}`);
       throw new BadRequestException('El código expiró. Solicitá uno nuevo.');
     }
 
@@ -262,6 +274,7 @@ export class CustomersService {
       data: { password: hashed, passwordResetCode: null, passwordResetExpires: null },
     });
 
+    console.log(`[SHOP] Password reset successful — customer #${customer.id}`);
     const token = this.signToken(updated.id, updated.email);
     return {
       message: 'Contraseña actualizada correctamente',
@@ -269,8 +282,6 @@ export class CustomersService {
       customer: this.safeCustomer(updated),
     };
   }
-
-  // ── Internal ──────────────────────────────────────────────────────────────
 
   async findById(id: number) {
     return this.prisma.customer.findUnique({ where: { id } });
