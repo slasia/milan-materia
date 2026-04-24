@@ -44,10 +44,23 @@ export class PaymentsController {
 
     // Verify HMAC-SHA256 signature when secret is configured
     const secret = this.configService.get<string>('MP_WEBHOOK_SECRET');
+
+    // ── Signature debug info ────────────────────────────────────────────────
+    console.log('Secret configured :', secret ? `yes (starts: ${secret.slice(0,8)}... ends: ...${secret.slice(-4)})` : 'NO — skipping verification');
+    // ────────────────────────────────────────────────────────────────────────
+
     if (secret) {
-      const xSignature = req.headers['x-signature'] as string;
-      const xRequestId = req.headers['x-request-id'] as string;
-      const resolvedDataId = paymentId || dataId || body?.data?.id;
+      const xSignature  = req.headers['x-signature']  as string | undefined;
+      const xRequestId  = req.headers['x-request-id'] as string | undefined;
+
+      // For signature verification MP always uses body.data.id, not the query param
+      const signatureDataId = body?.data?.id ?? paymentId ?? dataId ?? '';
+
+      console.log('Signature inputs  :', {
+        xSignature,
+        xRequestId: xRequestId ?? '(missing — will use empty string)',
+        signatureDataId,
+      });
 
       if (!xSignature) {
         console.warn('MP WEBHOOK — missing x-signature, rejecting');
@@ -56,10 +69,15 @@ export class PaymentsController {
 
       // Extract ts and v1 from x-signature header: "ts=...,v1=..."
       const parts = Object.fromEntries(
-        xSignature.split(',').map(p => p.split('=') as [string, string]),
+        xSignature.split(',').map(p => {
+          const idx = p.indexOf('=');
+          return [p.slice(0, idx), p.slice(idx + 1)];
+        }),
       );
       const ts = parts['ts'];
       const v1 = parts['v1'];
+
+      console.log('Parsed signature  :', { ts, v1 });
 
       if (!ts || !v1) {
         console.warn('MP WEBHOOK — malformed x-signature:', xSignature);
@@ -67,19 +85,24 @@ export class PaymentsController {
       }
 
       // Build manifest string as per MercadoPago docs
-      const manifest = `id:${resolvedDataId};request-id:${xRequestId};ts:${ts};`;
+      // xRequestId must be empty string (not "undefined") if header is absent
+      const manifest = `id:${signatureDataId};request-id:${xRequestId ?? ''};ts:${ts};`;
       const expected = crypto
         .createHmac('sha256', secret)
         .update(manifest)
         .digest('hex');
 
-      console.log('Signature check — manifest:', manifest);
-      console.log('Signature check — expected:', expected, '| received:', v1, '| match:', expected === v1);
+      console.log('Manifest          :', manifest);
+      console.log('Expected hash     :', expected);
+      console.log('Received hash     :', v1);
+      console.log('Match             :', expected === v1);
 
       if (expected !== v1) {
         console.warn('MP WEBHOOK — invalid signature, rejecting');
         throw new UnauthorizedException('Invalid webhook signature');
       }
+
+      console.log('MP WEBHOOK — signature OK');
     } else {
       console.warn('MP WEBHOOK — MP_WEBHOOK_SECRET not set, skipping signature verification');
     }
