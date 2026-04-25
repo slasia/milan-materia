@@ -2,6 +2,21 @@ import { useState, useEffect, useRef } from 'react'
 import { getProducts, getCategories, deleteProduct, uploadImage, fmt, imgUrl } from '../api.js'
 import ProductForm from '../components/ProductForm.jsx'
 import { useToast } from '../components/Toast.jsx'
+import { useSortable } from '../hooks/useSortable.js'
+
+function SortTh({ label, sortKey, active, dir, onSort, className = '' }) {
+  return (
+    <th className={`sortable${active ? ' active' : ''}${className ? ' ' + className : ''}`} onClick={() => onSort(sortKey)}>
+      <span className="th-inner">
+        {label}
+        <span className="sort-icon">
+          <span className={`sort-icon-up${active && dir === 'asc' ? '' : ' dim'}`} />
+          <span className={`sort-icon-down${active && dir === 'desc' ? '' : ' dim'}`} />
+        </span>
+      </span>
+    </th>
+  )
+}
 
 const BADGE_COLORS = {
   excl: 'badge-gold',
@@ -130,6 +145,8 @@ export default function Products() {
         )
       })
     : products
+
+  const { sorted, sortKey, sortDir, handleSort } = useSortable(filtered)
 
   return (
     <>

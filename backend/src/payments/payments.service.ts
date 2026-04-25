@@ -195,6 +195,10 @@ export class PaymentsService {
     let preference: Awaited<ReturnType<typeof preferenceClient.create>>;
 
     try {
+      console.log("-----------------------------LOG TEMPORAL-------------------------------"); 
+      console.log('frontendUrl:', frontendUrl);
+      console.log('backendUrl:', backendUrl);
+
       preference = await preferenceClient.create({
         body: {
           items: mpItems,
