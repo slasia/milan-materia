@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getProducts, getCategories, deleteProduct, uploadImage, fmt, imgUrl } from '../api.js'
+import { getProducts, getCategories, deleteProduct, bulkDeleteProducts, uploadImage, fmt, imgUrl } from '../api.js'
 import ProductForm from '../components/ProductForm.jsx'
 import { useToast } from '../components/Toast.jsx'
 import { useSortable } from '../hooks/useSortable.js'
@@ -68,6 +68,8 @@ export default function Products() {
   const [editingProduct, setEditingProduct] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
   const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState(new Set())
+  const [bulkDeleting, setBulkDeleting] = useState(false)
   const fileInputRefs = useRef({})
 
   async function load() {
@@ -75,6 +77,7 @@ export default function Products() {
       const [prods, cats] = await Promise.all([getProducts(), getCategories()])
       setProducts(Array.isArray(prods) ? prods : prods?.products || [])
       setCategories(Array.isArray(cats) ? cats : cats?.categories || [])
+      setSelected(new Set())
     } catch (e) {
       setError(e.message)
     } finally {
@@ -108,6 +111,21 @@ export default function Products() {
     }
   }
 
+  async function handleBulkDelete() {
+    if (selected.size === 0) return
+    if (!window.confirm(`¿Eliminar ${selected.size} producto${selected.size > 1 ? 's' : ''}?`)) return
+    setBulkDeleting(true)
+    try {
+      const result = await bulkDeleteProducts([...selected])
+      showToast(`${result.deleted} producto${result.deleted !== 1 ? 's' : ''} eliminado${result.deleted !== 1 ? 's' : ''}`, 'success')
+      await load()
+    } catch (e) {
+      showToast(e.message || 'Error al eliminar', 'error')
+    } finally {
+      setBulkDeleting(false)
+    }
+  }
+
   async function handleImageUpload(productId, file) {
     try {
       await uploadImage(productId, file)
@@ -120,6 +138,29 @@ export default function Products() {
 
   function triggerFileInput(productId) {
     fileInputRefs.current[productId]?.click()
+  }
+
+  function toggleSelect(id) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleAll(visibleIds) {
+    setSelected(prev => {
+      const allSelected = visibleIds.every(id => prev.has(id))
+      if (allSelected) {
+        const next = new Set(prev)
+        visibleIds.forEach(id => next.delete(id))
+        return next
+      }
+      const next = new Set(prev)
+      visibleIds.forEach(id => next.add(id))
+      return next
+    })
   }
 
   if (loading) return <div className="loading-wrap"><div className="spinner" /></div>
@@ -147,14 +188,27 @@ export default function Products() {
     : products
 
   const { sorted, sortKey, sortDir, handleSort } = useSortable(filtered)
+  const visibleIds = sorted.map(p => p.id)
+  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selected.has(id))
 
   return (
     <>
       <div className="page-header">
         <h1 className="page-title">Productos</h1>
-        <button className="btn btn-primary" onClick={openCreate}>
-          + Nuevo Producto
-        </button>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          {selected.size > 0 && (
+            <button
+              className="btn btn-danger btn-sm"
+              onClick={handleBulkDelete}
+              disabled={bulkDeleting}
+            >
+              {bulkDeleting ? 'Eliminando...' : `Eliminar ${selected.size} seleccionado${selected.size > 1 ? 's' : ''}`}
+            </button>
+          )}
+          <button className="btn btn-primary" onClick={openCreate}>
+            + Nuevo Producto
+          </button>
+        </div>
       </div>
 
       <div className="customers-search-wrap">
@@ -184,21 +238,37 @@ export default function Products() {
             <table>
               <thead>
                 <tr>
+                  <th style={{ width: 36 }}>
+                    <input
+                      type="checkbox"
+                      checked={allVisibleSelected}
+                      onChange={() => toggleAll(visibleIds)}
+                      style={{ cursor: 'pointer' }}
+                    />
+                  </th>
                   <th>Imagen</th>
-                  <th>Nombre</th>
-                  <th>Categoría</th>
-                  <th>Precio</th>
-                  <th>Stock</th>
+                  <SortTh label="Nombre"    sortKey="name"          active={sortKey === 'name'}          dir={sortDir} onSort={handleSort} />
+                  <SortTh label="Categoría" sortKey="category.name" active={sortKey === 'category.name'} dir={sortDir} onSort={handleSort} />
+                  <SortTh label="Precio"    sortKey="price"         active={sortKey === 'price'}         dir={sortDir} onSort={handleSort} />
+                  <SortTh label="Stock"     sortKey="stock"         active={sortKey === 'stock'}         dir={sortDir} onSort={handleSort} />
                   <th>Badge</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(product => {
+                {sorted.map(product => {
                   const imgSrc = imgUrl(product.images?.[0]?.url || product.imageUrl)
                   const catName = product.category?.name || categories.find(c => c.id === product.categoryId)?.name || '—'
                   return (
-                    <tr key={product.id}>
+                    <tr key={product.id} className={selected.has(product.id) ? 'row-selected' : ''}>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={selected.has(product.id)}
+                          onChange={() => toggleSelect(product.id)}
+                          style={{ cursor: 'pointer' }}
+                        />
+                      </td>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           {imgSrc ? (

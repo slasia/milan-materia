@@ -10,4 +10,5 @@ export abstract class CategoryRepository {
   abstract create(data: Prisma.CategoryCreateInput): Promise<Category>;
   abstract update(id: number, data: Prisma.CategoryUpdateInput): Promise<Category>;
   abstract delete(id: number): Promise<Category>;
+  abstract deleteMany(ids: number[]): Promise<{ count: number }>;
 }

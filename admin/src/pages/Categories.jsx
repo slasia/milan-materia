@@ -1,7 +1,22 @@
 import { useState, useEffect } from 'react'
 import Modal from '../components/Modal.jsx'
 import { useToast } from '../components/Toast.jsx'
-import { getAllCategories, createCategory, updateCategory, deleteCategory } from '../api.js'
+import { getAllCategories, createCategory, updateCategory, deleteCategory, bulkDeleteCategories } from '../api.js'
+import { useSortable } from '../hooks/useSortable.js'
+
+function SortTh({ label, sortKey, active, dir, onSort, className = '' }) {
+  return (
+    <th className={`sortable${active ? ' active' : ''}${className ? ' ' + className : ''}`} onClick={() => onSort(sortKey)}>
+      <span className="th-inner">
+        {label}
+        <span className="sort-icon">
+          <span className={`sort-icon-up${active && dir === 'asc' ? '' : ' dim'}`} />
+          <span className={`sort-icon-down${active && dir === 'desc' ? '' : ' dim'}`} />
+        </span>
+      </span>
+    </th>
+  )
+}
 
 function SearchIcon() {
   return (
@@ -203,11 +218,14 @@ export default function Categories() {
   const [editingCat, setEditingCat] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
   const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState(new Set())
+  const [bulkDeleting, setBulkDeleting] = useState(false)
 
   async function load() {
     try {
       const cats = await getAllCategories()
       setCategories(Array.isArray(cats) ? cats : [])
+      setSelected(new Set())
     } catch (e) {
       setError(e.message)
     } finally {
@@ -246,6 +264,44 @@ export default function Categories() {
     }
   }
 
+  async function handleBulkDelete() {
+    if (selected.size === 0) return
+    if (!window.confirm(`¿Eliminar ${selected.size} categoría${selected.size > 1 ? 's' : ''}? Si tienen productos, la eliminación fallará.`)) return
+    setBulkDeleting(true)
+    try {
+      const result = await bulkDeleteCategories([...selected])
+      showToast(`${result.deleted} categoría${result.deleted !== 1 ? 's' : ''} eliminada${result.deleted !== 1 ? 's' : ''}`, 'success')
+      await load()
+    } catch (e) {
+      showToast(e.message || 'Error al eliminar', 'error')
+    } finally {
+      setBulkDeleting(false)
+    }
+  }
+
+  function toggleSelect(id) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleAll(visibleIds) {
+    setSelected(prev => {
+      const allSelected = visibleIds.every(id => prev.has(id))
+      if (allSelected) {
+        const next = new Set(prev)
+        visibleIds.forEach(id => next.delete(id))
+        return next
+      }
+      const next = new Set(prev)
+      visibleIds.forEach(id => next.add(id))
+      return next
+    })
+  }
+
   if (loading) return <div className="loading-wrap"><div className="spinner" /></div>
 
   if (error) {
@@ -267,6 +323,10 @@ export default function Categories() {
       )
     : categories
 
+  const { sorted, sortKey, sortDir, handleSort } = useSortable(filtered)
+  const visibleIds = sorted.map(c => c.id)
+  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selected.has(id))
+
   return (
     <>
       <div className="page-header">
@@ -276,9 +336,16 @@ export default function Categories() {
             Las categorías definen cómo se organizan los productos en la tienda y en el menú de navegación.
           </p>
         </div>
-        <button className="btn btn-primary" onClick={openCreate}>
-          + Nueva Categoría
-        </button>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          {selected.size > 0 && (
+            <button className="btn btn-danger btn-sm" onClick={handleBulkDelete} disabled={bulkDeleting}>
+              {bulkDeleting ? 'Eliminando...' : `Eliminar ${selected.size} seleccionada${selected.size > 1 ? 's' : ''}`}
+            </button>
+          )}
+          <button className="btn btn-primary" onClick={openCreate}>
+            + Nueva Categoría
+          </button>
+        </div>
       </div>
 
       <div className="customers-search-wrap">
@@ -320,18 +387,24 @@ export default function Categories() {
             <table>
               <thead>
                 <tr>
-                  <th>Nombre</th>
-                  <th>Slug</th>
+                  <th style={{ width: 36 }}>
+                    <input type="checkbox" checked={allVisibleSelected} onChange={() => toggleAll(visibleIds)} style={{ cursor: 'pointer' }} />
+                  </th>
+                  <SortTh label="Nombre"    sortKey="name"      active={sortKey === 'name'}      dir={sortDir} onSort={handleSort} />
+                  <SortTh label="Slug"      sortKey="slug"      active={sortKey === 'slug'}      dir={sortDir} onSort={handleSort} />
                   <th>Descripción</th>
-                  <th>Orden</th>
-                  <th>Productos</th>
+                  <SortTh label="Orden"     sortKey="sortOrder" active={sortKey === 'sortOrder'} dir={sortDir} onSort={handleSort} />
+                  <SortTh label="Productos" sortKey="_count.products" active={sortKey === '_count.products'} dir={sortDir} onSort={handleSort} />
                   <th>Estado</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(cat => (
-                  <tr key={cat.id}>
+                {sorted.map(cat => (
+                  <tr key={cat.id} className={selected.has(cat.id) ? 'row-selected' : ''}>
+                    <td>
+                      <input type="checkbox" checked={selected.has(cat.id)} onChange={() => toggleSelect(cat.id)} style={{ cursor: 'pointer' }} />
+                    </td>
                     <td style={{ fontWeight: 600 }}>{cat.name}</td>
                     <td><code style={{ fontSize: 12, color: 'var(--muted)' }}>{cat.slug}</code></td>
                     <td className="td-muted" style={{ maxWidth: 200 }}>

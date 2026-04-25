@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseIntPipe,
   Patch,
@@ -53,5 +55,13 @@ export class CategoriesController {
   @Delete('admin/categories/:id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.categoriesService.remove(id);
+  }
+
+  /** Bulk delete: DELETE /admin/categories  body: { ids: number[] } */
+  @UseGuards(AdminJwtGuard)
+  @Delete('admin/categories')
+  @HttpCode(HttpStatus.OK)
+  removeMany(@Body() body: { ids: number[] }) {
+    return this.categoriesService.removeMany(body.ids);
   }
 }

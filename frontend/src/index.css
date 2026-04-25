@@ -83,6 +83,13 @@ button { cursor: pointer; }
 }
 .ann-track span { white-space: nowrap; }
 .ann-sep { color: var(--gold-dark); }
+/* Duplicate items for the mobile marquee loop — hidden on desktop */
+.ann-dup { display: none; }
+
+@keyframes ann-marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
 
 /* ===== HEADER ===== */
 header {
@@ -1851,13 +1858,29 @@ footer a { color: var(--gold); }
 
   .header-inner { height: 60px; padding: 0 18px; gap: 14px; }
 
+  /* ── Hero: switch from crossfade (position:absolute) to show/hide
+     so content is never clipped by the fixed container height ── */
   .hero { min-height: auto; }
-  .hero-slides { min-height: 560px; }
+  .hero-slides {
+    min-height: 0;       /* let natural content height drive the size */
+    position: relative;
+  }
   .hero-slide {
+    /* no longer absolutely positioned on tablet/mobile */
+    position: relative;
+    inset: unset;
+    display: none;
+    opacity: 1;
+    pointer-events: auto;
+    transition: none;
+    /* column layout: image on top, text below */
     flex-direction: column-reverse;
-    padding: 36px 20px 72px;
+    padding: 40px 20px 72px;
     gap: 32px;
     align-items: center;
+  }
+  .hero-slide.active {
+    display: flex;
   }
   .hero-content { text-align: center; }
   .hero p { max-width: 100%; margin-left: auto; margin-right: auto; }
@@ -1874,15 +1897,22 @@ footer a { color: var(--gold); }
 }
 
 @media (max-width: 640px) {
-  .ann-ticker { display: flex; }
+  /* ── Announcement bar: marquee scroll so nothing gets clipped ── */
+  .ann-dup { display: inline; }   /* show duplicate items for seamless loop */
+  .ann-track {
+    justify-content: flex-start;
+    animation: ann-marquee 22s linear infinite;
+    padding: 0;
+  }
+  .ann-ticker:hover .ann-track { animation-play-state: paused; }
 
   .header-inner { height: 56px; padding: 0 14px; gap: 10px; }
   .site-logo img { height: 40px; }
   .ha-icon { display: none; }
   .ha-cart { display: flex; }
 
-  .hero-slides { min-height: 520px; }
-  .hero-slide { padding: 28px 16px 68px; gap: 24px; }
+  /* hero-slides no longer needs a fixed height — it's flow layout now */
+  .hero-slide { padding: 32px 16px 68px; gap: 24px; }
   .hero-badge { font-size: 9.5px; padding: 5px 12px; }
   .hero h1 { font-size: clamp(24px, 8vw, 36px); }
   .hero p { font-size: 14px; }

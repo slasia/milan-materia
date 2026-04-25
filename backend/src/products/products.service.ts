@@ -47,6 +47,13 @@ export class ProductsService {
     this.logger.log(`Product #${id} deleted`);
   }
 
+  async removeMany(ids: number[]): Promise<{ deleted: number }> {
+    this.logger.log(`Bulk deleting ${ids.length} products: [${ids.join(', ')}]`);
+    const result = await this.productRepo.deleteMany(ids);
+    this.logger.log(`Bulk delete complete — ${result.count} products removed`);
+    return { deleted: result.count };
+  }
+
   async updateImage(id: number, imageUrl: string): Promise<ProductWithRelations> {
     await this.findOne(id);
     this.logger.log(`Updating cover image for product #${id}`);

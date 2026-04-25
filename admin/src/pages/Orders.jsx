@@ -2,6 +2,21 @@ import { useState, useEffect } from 'react'
 import { getOrders, getOrder, updateOrderStatus, fmt, fmtDate } from '../api.js'
 import Modal from '../components/Modal.jsx'
 import { useToast } from '../components/Toast.jsx'
+import { useSortable } from '../hooks/useSortable.js'
+
+function SortTh({ label, sortKey, active, dir, onSort, className = '' }) {
+  return (
+    <th className={`sortable${active ? ' active' : ''}${className ? ' ' + className : ''}`} onClick={() => onSort(sortKey)}>
+      <span className="th-inner">
+        {label}
+        <span className="sort-icon">
+          <span className={`sort-icon-up${active && dir === 'asc' ? '' : ' dim'}`} />
+          <span className={`sort-icon-down${active && dir === 'desc' ? '' : ' dim'}`} />
+        </span>
+      </span>
+    </th>
+  )
+}
 
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pendiente' },
@@ -353,6 +368,8 @@ export default function Orders() {
       })
     : orders
 
+  const { sorted, sortKey, sortDir, handleSort } = useSortable(filtered, 'createdAt', 'desc')
+
   return (
     <>
       <div className="page-header">
@@ -391,16 +408,16 @@ export default function Orders() {
             <table>
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Cliente</th>
-                  <th>Total</th>
-                  <th>Estado</th>
-                  <th>Fecha y hora</th>
+                  <SortTh label="ID"         sortKey="id"          active={sortKey === 'id'}          dir={sortDir} onSort={handleSort} />
+                  <SortTh label="Cliente"    sortKey="customerName" active={sortKey === 'customerName'} dir={sortDir} onSort={handleSort} />
+                  <SortTh label="Total"      sortKey="total"       active={sortKey === 'total'}       dir={sortDir} onSort={handleSort} />
+                  <SortTh label="Estado"     sortKey="status"      active={sortKey === 'status'}      dir={sortDir} onSort={handleSort} />
+                  <SortTh label="Fecha y hora" sortKey="createdAt" active={sortKey === 'createdAt'}   dir={sortDir} onSort={handleSort} />
                   <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(order => (
+                {sorted.map(order => (
                   <tr key={order.id}>
                     <td
                       className="td-muted"

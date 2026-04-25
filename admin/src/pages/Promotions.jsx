@@ -2,6 +2,21 @@ import { useState, useEffect } from 'react'
 import { getPromotions, createPromotion, updatePromotion, deletePromotion, fmtDate } from '../api.js'
 import Modal from '../components/Modal.jsx'
 import { useToast } from '../components/Toast.jsx'
+import { useSortable } from '../hooks/useSortable.js'
+
+function SortTh({ label, sortKey, active, dir, onSort, className = '' }) {
+  return (
+    <th className={`sortable${active ? ' active' : ''}${className ? ' ' + className : ''}`} onClick={() => onSort(sortKey)}>
+      <span className="th-inner">
+        {label}
+        <span className="sort-icon">
+          <span className={`sort-icon-up${active && dir === 'asc' ? '' : ' dim'}`} />
+          <span className={`sort-icon-down${active && dir === 'desc' ? '' : ' dim'}`} />
+        </span>
+      </span>
+    </th>
+  )
+}
 
 const PROMO_TYPES = [
   { value: 'announcement', label: 'Anuncio' },
@@ -179,6 +194,8 @@ export default function Promotions() {
       )
     : promos
 
+  const { sorted, sortKey, sortDir, handleSort } = useSortable(filtered)
+
   return (
     <>
       <div className="page-header">
@@ -217,17 +234,17 @@ export default function Promotions() {
             <table>
               <thead>
                 <tr>
-                  <th>Título</th>
-                  <th>Tipo</th>
-                  <th>Código</th>
-                  <th>Descuento</th>
+                  <SortTh label="Título"    sortKey="title"       active={sortKey === 'title'}       dir={sortDir} onSort={handleSort} />
+                  <SortTh label="Tipo"      sortKey="type"        active={sortKey === 'type'}        dir={sortDir} onSort={handleSort} />
+                  <SortTh label="Código"    sortKey="code"        active={sortKey === 'code'}        dir={sortDir} onSort={handleSort} />
+                  <SortTh label="Descuento" sortKey="discountPct" active={sortKey === 'discountPct'} dir={sortDir} onSort={handleSort} />
                   <th>Estado</th>
-                  <th>Creada</th>
+                  <SortTh label="Creada"    sortKey="createdAt"   active={sortKey === 'createdAt'}   dir={sortDir} onSort={handleSort} />
                   <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(promo => (
+                {sorted.map(promo => (
                   <tr key={promo.id}>
                     <td>
                       <div style={{ fontWeight: 600 }}>{promo.title}</div>

@@ -72,6 +72,11 @@ export class PrismaProductRepository extends ProductRepository {
     return this.prisma.product.delete({ where: { id } });
   }
 
+  async deleteMany(ids: number[]): Promise<{ count: number }> {
+    const result = await this.prisma.product.deleteMany({ where: { id: { in: ids } } });
+    return { count: result.count };
+  }
+
   async updateImageUrl(id: number, imageUrl: string | null): Promise<void> {
     await this.prisma.product.update({ where: { id }, data: { imageUrl } });
   }

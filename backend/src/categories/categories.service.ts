@@ -55,4 +55,11 @@ export class CategoriesService {
     this.logger.log(`Category #${id} deleted`);
     return result;
   }
+
+  async removeMany(ids: number[]): Promise<{ deleted: number }> {
+    this.logger.log(`Bulk deleting ${ids.length} categories: [${ids.join(', ')}]`);
+    const result = await this.categoryRepo.deleteMany(ids);
+    this.logger.log(`Bulk delete complete — ${result.count} categories removed`);
+    return { deleted: result.count };
+  }
 }

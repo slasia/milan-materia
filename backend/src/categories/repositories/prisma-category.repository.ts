@@ -36,4 +36,9 @@ export class PrismaCategoryRepository extends CategoryRepository {
   async delete(id: number): Promise<Category> {
     return this.prisma.category.delete({ where: { id } });
   }
+
+  async deleteMany(ids: number[]): Promise<{ count: number }> {
+    const result = await this.prisma.category.deleteMany({ where: { id: { in: ids } } });
+    return { count: result.count };
+  }
 }

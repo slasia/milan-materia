@@ -1,6 +1,21 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getCustomers, getCustomer, fmt, fmtDate } from '../api.js'
 import Modal from '../components/Modal.jsx'
+import { useSortable } from '../hooks/useSortable.js'
+
+function SortTh({ label, sortKey, active, dir, onSort, className = '' }) {
+  return (
+    <th className={`sortable${active ? ' active' : ''}${className ? ' ' + className : ''}`} onClick={() => onSort(sortKey)}>
+      <span className="th-inner">
+        {label}
+        <span className="sort-icon">
+          <span className={`sort-icon-up${active && dir === 'asc' ? '' : ' dim'}`} />
+          <span className={`sort-icon-down${active && dir === 'desc' ? '' : ' dim'}`} />
+        </span>
+      </span>
+    </th>
+  )
+}
 
 const STATUS_BADGE = {
   paid:       'badge-green',
@@ -169,6 +184,8 @@ export default function Customers() {
 
   useEffect(() => { load() }, [load])
 
+  const { sorted: sortedCustomers, sortKey, sortDir, handleSort } = useSortable(customers)
+
   return (
     <>
       <div className="page-header">
@@ -215,17 +232,17 @@ export default function Customers() {
             <table>
               <thead>
                 <tr>
-                  <th>Cliente</th>
-                  <th>Teléfono</th>
-                  <th>Ciudad</th>
-                  <th>Pedidos</th>
+                  <SortTh label="Cliente"       sortKey="name"          active={sortKey === 'name'}          dir={sortDir} onSort={handleSort} />
+                  <SortTh label="Teléfono"      sortKey="phone"         active={sortKey === 'phone'}         dir={sortDir} onSort={handleSort} />
+                  <SortTh label="Ciudad"        sortKey="city"          active={sortKey === 'city'}          dir={sortDir} onSort={handleSort} />
+                  <SortTh label="Pedidos"       sortKey="_count.orders" active={sortKey === '_count.orders'} dir={sortDir} onSort={handleSort} />
                   <th>Total gastado</th>
-                  <th>Registrado</th>
+                  <SortTh label="Registrado"    sortKey="createdAt"     active={sortKey === 'createdAt'}     dir={sortDir} onSort={handleSort} />
                   <th></th>
                 </tr>
               </thead>
               <tbody>
-                {customers.map(c => (
+                {sortedCustomers.map(c => (
                   <tr key={c.id}>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

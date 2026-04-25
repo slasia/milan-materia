@@ -43,6 +43,7 @@ export abstract class ProductRepository {
   abstract create(data: ProductCreateData): Promise<ProductWithRelations>;
   abstract update(id: number, data: ProductUpdateData): Promise<ProductWithRelations>;
   abstract delete(id: number): Promise<Product>;
+  abstract deleteMany(ids: number[]): Promise<{ count: number }>;
   abstract updateImageUrl(id: number, imageUrl: string | null): Promise<void>;
   abstract decrementStock(
     productId: number,

@@ -60,7 +60,7 @@ function HeroSlide({ slide, active }) {
           <div className="hero-img-wrap">
             {!imgFailed ? (
               <img
-                src={`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/${slide.img}`}
+                src={`/${slide.img}`}
                 alt={slide.imgAlt}
                 className="hero-product-img"
                 onError={() => setImgFailed(true)}

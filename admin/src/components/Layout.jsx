@@ -56,6 +56,17 @@ export default function Layout() {
         <main className="page-content">
           <Outlet />
         </main>
+        <footer className="admin-footer">
+          Powered by{' '}
+          <a
+            href="https://wa.me/542236352372"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="admin-footer-link"
+          >
+            Sebastian Lasia
+          </a>
+        </footer>
       </div>
       <ToastContainer />
     </div>

@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseIntPipe,
   Patch,
@@ -82,6 +84,14 @@ export class ProductsController {
   @Delete("admin/products/:id")
   remove(@Param("id", ParseIntPipe) id: number) {
     return this.productsService.remove(id);
+  }
+
+  /** Bulk delete: DELETE /admin/products  body: { ids: number[] } */
+  @UseGuards(AdminJwtGuard)
+  @Delete("admin/products")
+  @HttpCode(HttpStatus.OK)
+  removeMany(@Body() body: { ids: number[] }) {
+    return this.productsService.removeMany(body.ids);
   }
 
   /** Legacy: update single cover image (also used by camera button in products table) */

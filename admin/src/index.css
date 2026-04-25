@@ -43,6 +43,21 @@ body {
   overflow-y: auto;
 }
 
+.admin-footer {
+  padding: 14px 32px;
+  font-size: 11px;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  text-align: center;
+  letter-spacing: .03em;
+}
+.admin-footer-link {
+  color: var(--gold);
+  text-decoration: none;
+  transition: color .2s;
+}
+.admin-footer-link:hover { color: var(--gold-bright); text-decoration: underline; }
+
 /* ── SIDEBAR ─────────────────────────────────────────── */
 .sidebar {
   width: 240px;
@@ -369,6 +384,14 @@ thead th {
   color: var(--muted);
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
+}
+
+/* ── Row selection ───────────────────────────────────────────────────────── */
+tbody tr.row-selected {
+  background: rgba(200, 169, 106, 0.08);
+}
+tbody tr.row-selected td {
+  border-bottom-color: rgba(200, 169, 106, 0.2);
 }
 
 /* ── Sortable table headers ──────────────────────────────────────────────── */
