@@ -21,6 +21,7 @@ import { ProductsService } from "./products.service";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { AdminJwtGuard } from "../auth/auth.guard";
+import { BulkDeleteDto } from "../common/dto/bulk-delete.dto";
 
 const imageInterceptor = FileInterceptor("image", {
   storage: diskStorage({
@@ -90,8 +91,8 @@ export class ProductsController {
   @UseGuards(AdminJwtGuard)
   @Delete("admin/products")
   @HttpCode(HttpStatus.OK)
-  removeMany(@Body() body: { ids: number[] }) {
-    return this.productsService.removeMany(body.ids);
+  removeMany(@Body() dto: BulkDeleteDto) {
+    return this.productsService.removeMany(dto.ids);
   }
 
   /** Legacy: update single cover image (also used by camera button in products table) */

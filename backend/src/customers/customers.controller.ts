@@ -13,6 +13,10 @@ import {
 import { CustomersService } from './customers.service';
 import { RegisterCustomerDto } from './dto/register-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
+import { LoginCustomerDto } from './dto/login-customer.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 import { RequireCustomerJwtGuard } from './customer-jwt.guard';
 import { AdminJwtGuard } from '../auth/auth.guard';
 
@@ -28,26 +32,26 @@ export class CustomersController {
   }
 
   @Post('login')
-  login(@Body() body: { email: string; password: string }) {
-    return this.customersService.login(body.email, body.password);
+  login(@Body() dto: LoginCustomerDto) {
+    return this.customersService.login(dto.email, dto.password);
   }
 
   @Post('forgot-password')
-  forgotPassword(@Body() body: { email: string }) {
-    return this.customersService.forgotPassword(body.email);
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.customersService.forgotPassword(dto.email);
   }
 
   @Post('reset-password')
-  resetPassword(@Body() body: { email: string; code: string; password: string }) {
-    return this.customersService.resetPassword(body.email, body.code, body.password);
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.customersService.resetPassword(dto.email, dto.code, dto.password);
   }
 
   // ── Email verification (requires customer JWT) ────────────────────────────
 
   @Post('verify')
   @UseGuards(RequireCustomerJwtGuard)
-  verify(@Req() req: any, @Body() body: { code: string }) {
-    return this.customersService.verifyEmail(req.user.id, body.code);
+  verify(@Req() req: any, @Body() dto: VerifyEmailDto) {
+    return this.customersService.verifyEmail(req.user.id, dto.code);
   }
 
   @Post('resend-verification')

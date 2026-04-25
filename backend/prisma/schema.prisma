@@ -112,7 +112,7 @@ model Order {
   promoCode       String?
   promotionId     Int?
   mpPreferenceId  String?     @unique
-  mpPaymentId     String?
+  mpPaymentId     String?     @unique
   paymentMethod   String?
   notes           String?
   shippingAddress String?
@@ -121,6 +121,11 @@ model Order {
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
   items           OrderItem[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([customerId])
+  @@index([status, createdAt])
 }
 
 model OrderItem {
@@ -132,4 +137,7 @@ model OrderItem {
   total     Int
   order     Order   @relation(fields: [orderId], references: [id])
   product   Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
 }

@@ -94,6 +94,18 @@ export class PrismaProductRepository extends ProductRepository {
     return { count: result.count };
   }
 
+  async incrementStock(
+    productId: number,
+    qty: number,
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
+    const client = tx ?? this.prisma;
+    await client.product.update({
+      where: { id: productId },
+      data: { stock: { increment: qty } },
+    });
+  }
+
   async countImages(productId: number): Promise<number> {
     return this.prisma.productImage.count({ where: { productId } });
   }

@@ -50,6 +50,11 @@ export abstract class ProductRepository {
     qty: number,
     tx?: Prisma.TransactionClient,
   ): Promise<{ count: number }>;
+  abstract incrementStock(
+    productId: number,
+    qty: number,
+    tx?: Prisma.TransactionClient,
+  ): Promise<void>;
 
   // ── Product Images ────────────────────────────────────────────────────────
   abstract countImages(productId: number): Promise<number>;

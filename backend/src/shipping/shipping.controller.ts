@@ -1,5 +1,6 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { ShippingService } from './shipping.service';
+import { QuoteDto } from './dto/quote.dto';
 
 @Controller('shipping')
 export class ShippingController {
@@ -7,7 +8,7 @@ export class ShippingController {
 
   /** POST /shipping/quote — called by frontend to show estimated cost */
   @Post('quote')
-  quote(@Body('postalCode') postalCode: string) {
-    return this.shippingService.quote(postalCode || '');
+  quote(@Body() dto: QuoteDto) {
+    return this.shippingService.quote(dto.postalCode);
   }
 }

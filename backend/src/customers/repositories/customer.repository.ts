@@ -1,6 +1,6 @@
 import type { Customer, Prisma } from '@prisma/client';
 
-export type SafeCustomer = Omit<Customer, 'password' | 'verificationCode' | 'verificationCodeExpires'>;
+export type SafeCustomer = Omit<Customer, 'password' | 'verificationCode' | 'verificationCodeExpires' | 'passwordResetCode' | 'passwordResetExpires'>;
 
 export type CustomerAdminRow = {
   id: number;

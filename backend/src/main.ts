@@ -1,33 +1,41 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
-import * as path from 'path';
-import * as express from 'express';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     rawBody: true,
   });
 
+  // ── Security headers ────────────────────────────────────────────────────────
+  app.use(helmet());
+
+  // ── CORS — explicit whitelist, never wildcard with credentials ──────────────
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5174';
+  const adminUrl    = process.env.ADMIN_URL    || 'http://localhost:5175';
+  const allowedOrigins = [frontendUrl, adminUrl].filter(Boolean);
+
   app.enableCors({
-    origin: true,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (curl, Postman, server-to-server)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
-  // Health check
-  app.use('/health', (_req: any, res: any) => res.json({ status: 'ok' }));
-
+  // ── Input validation ────────────────────────────────────────────────────────
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
+      forbidNonWhitelisted: true,
       transform: true,
-      forbidNonWhitelisted: false,
     }),
   );
-
-  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
   const port = process.env.PORT || 3001;
   await app.listen(port);

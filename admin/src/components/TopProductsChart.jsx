@@ -26,11 +26,14 @@ export default function TopProductsChart({ data = [] }) {
     )
   }
 
-  const mapped = data.map(d => ({
-    name: (d.productName || 'Producto').slice(0, 12) + (d.productName?.length > 12 ? '…' : ''),
-    fullName: d.productName || 'Producto',
-    quantity: d._sum?.quantity || 0,
-  }))
+  const mapped = data.map(d => {
+    const name = d.product?.name || 'Producto'
+    return {
+      name: name.length > 12 ? name.slice(0, 12) + '…' : name,
+      fullName: name,
+      quantity: d.totalQuantity || 0,
+    }
+  })
 
   return (
     <div className="chart-card">

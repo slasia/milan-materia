@@ -29,43 +29,26 @@ export class PaymentsController {
     @Query('type') type: string,
     @Query('id') paymentId: string,
     @Query('data.id') dataId: string,
-    @Body() body: any,
+    @Body() body: Record<string, unknown>,
     @Req() req: Request,
   ) {
-    // ── LOG: full incoming request ──────────────────────────────────────────
-    this.logger.log('MP WEBHOOK received');
-    this.logger.log(`Query params: ${JSON.stringify({ type, paymentId, dataId })}`);
-    this.logger.log(`Body: ${JSON.stringify(body)}`);
-    this.logger.log(`Headers: ${JSON.stringify({
-      'x-signature'  : req.headers['x-signature'],
-      'x-request-id' : req.headers['x-request-id'],
-      'content-type' : req.headers['content-type'],
-      'user-agent'   : req.headers['user-agent'],
-    })}`);
-    // ───────────────────────────────────────────────────────────────────────
+    this.logger.log(`MP WEBHOOK received — type: "${type}", id: "${paymentId || dataId}"`);
 
     // Verify HMAC-SHA256 signature when secret is configured
     const secret = this.configService.get<string>('MP_WEBHOOK_SECRET');
 
-    this.logger.log(`Secret configured: ${secret ? `yes (starts: ${secret.slice(0,8)}...)` : 'NO — skipping verification'}`);
-
     if (secret) {
-      const xSignature  = req.headers['x-signature']  as string | undefined;
-      const xRequestId  = req.headers['x-request-id'] as string | undefined;
-
-      // For signature verification MP always uses body.data.id, not the query param
-      const signatureDataId = body?.data?.id ?? paymentId ?? dataId ?? '';
-
-      this.logger.log(`Signature inputs: ${JSON.stringify({
-        xSignature,
-        xRequestId: xRequestId ?? '(missing — will use empty string)',
-        signatureDataId,
-      })}`);
+      const xSignature = req.headers['x-signature'] as string | undefined;
+      const xRequestId = req.headers['x-request-id'] as string | undefined;
 
       if (!xSignature) {
         this.logger.warn('MP WEBHOOK — missing x-signature, rejecting');
         throw new UnauthorizedException('Missing x-signature');
       }
+
+      // For signature verification MP always uses body.data.id, not the query param
+      const bodyData = body?.data as Record<string, unknown> | undefined;
+      const signatureDataId = (bodyData?.id as string) ?? paymentId ?? dataId ?? '';
 
       // Extract ts and v1 from x-signature header: "ts=...,v1=..."
       const parts = Object.fromEntries(
@@ -77,10 +60,8 @@ export class PaymentsController {
       const ts = parts['ts'];
       const v1 = parts['v1'];
 
-      this.logger.log(`Parsed signature: ${JSON.stringify({ ts, v1 })}`);
-
       if (!ts || !v1) {
-        this.logger.warn(`MP WEBHOOK — malformed x-signature: ${xSignature}`);
+        this.logger.warn('MP WEBHOOK — malformed x-signature, rejecting');
         throw new UnauthorizedException('Malformed x-signature');
       }
 
@@ -90,30 +71,23 @@ export class PaymentsController {
         .update(manifest)
         .digest('hex');
 
-      const isLiveMode = body?.live_mode === true;
-      const signatureOk = expected === v1;
-
-      this.logger.log(`Manifest: ${manifest}`);
-      this.logger.log(`Expected hash: ${expected} | Received hash: ${v1} | Match: ${signatureOk} | Live mode: ${isLiveMode}`);
+      const signatureOk = crypto.timingSafeEqual(
+        Buffer.from(expected, 'hex'),
+        Buffer.from(v1.padEnd(expected.length, '0').slice(0, expected.length), 'hex'),
+      );
 
       if (!signatureOk) {
-        if (isLiveMode) {
-          // Production: reject invalid signatures
-          this.logger.warn('MP WEBHOOK — invalid signature in LIVE mode, rejecting');
-          throw new UnauthorizedException('Invalid webhook signature');
-        } else {
-          // Sandbox: MP may sign with a different key — warn but allow through
-          this.logger.warn('MP WEBHOOK — invalid signature in SANDBOX mode, allowing through (known MP sandbox behavior)');
-        }
-      } else {
-        this.logger.log('MP WEBHOOK — signature OK');
+        this.logger.warn('MP WEBHOOK — invalid signature, rejecting');
+        throw new UnauthorizedException('Invalid webhook signature');
       }
+
+      this.logger.log('MP WEBHOOK — signature OK');
     } else {
       this.logger.warn('MP WEBHOOK — MP_WEBHOOK_SECRET not set, skipping signature verification');
     }
 
-    const resolvedType = type || body?.type;
-    const resolvedId   = paymentId || dataId || body?.data?.id || body?.id;
+    const resolvedType = type || (body?.type as string);
+    const resolvedId   = paymentId || dataId || ((body?.data as Record<string, unknown>)?.id as string) || (body?.id as string);
     this.logger.log(`MP WEBHOOK — resolved type: "${resolvedType}" | resolved id: "${resolvedId}"`);
 
     // Route by event type

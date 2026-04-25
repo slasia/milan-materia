@@ -195,10 +195,6 @@ export class PaymentsService {
     let preference: Awaited<ReturnType<typeof preferenceClient.create>>;
 
     try {
-      console.log("-----------------------------LOG TEMPORAL-------------------------------"); 
-      console.log('frontendUrl:', frontendUrl);
-      console.log('backendUrl:', backendUrl);
-
       preference = await preferenceClient.create({
         body: {
           items: mpItems,
@@ -215,7 +211,18 @@ export class PaymentsService {
       });
       this.logger.log(`MP preference created — id: ${preference.id}, order #${order.id}`);
     } catch (mpError) {
+      // Cancel the order AND restore stock so inventory is not permanently locked
       await this.orderRepo.update(order.id, { status: "cancelled" });
+      try {
+        await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+          for (const item of items) {
+            await this.productRepo.incrementStock(item.productId, item.quantity, tx);
+          }
+        });
+        this.logger.log(`Stock restored for order #${order.id} after MP failure`);
+      } catch (restoreErr) {
+        this.logger.error(`Failed to restore stock after MP failure for order #${order.id}: ${restoreErr.message}`);
+      }
       this.logger.error(`MP preference failed — order #${order.id} cancelled: ${mpError.message}`);
       throw new BadRequestException("No se pudo iniciar el pago con MercadoPago. Intente de nuevo.");
     }
@@ -256,6 +263,13 @@ export class PaymentsService {
       }
 
       if (payment.status === "approved") {
+        // Idempotency: skip if already paid (prevents double emails + double promo usage)
+        const existingOrder = await this.orderRepo.findById(orderId);
+        if (existingOrder?.status === "paid") {
+          this.logger.log(`Order #${orderId} already PAID, skipping duplicate webhook`);
+          return { received: true };
+        }
+
         await this.orderRepo.update(orderId, {
           status:        "paid",
           mpPaymentId:   String(payment.id),

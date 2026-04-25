@@ -15,6 +15,7 @@ import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { AdminJwtGuard } from '../auth/auth.guard';
+import { BulkDeleteDto } from '../common/dto/bulk-delete.dto';
 
 @Controller()
 export class CategoriesController {
@@ -61,7 +62,7 @@ export class CategoriesController {
   @UseGuards(AdminJwtGuard)
   @Delete('admin/categories')
   @HttpCode(HttpStatus.OK)
-  removeMany(@Body() body: { ids: number[] }) {
-    return this.categoriesService.removeMany(body.ids);
+  removeMany(@Body() dto: BulkDeleteDto) {
+    return this.categoriesService.removeMany(dto.ids);
   }
 }

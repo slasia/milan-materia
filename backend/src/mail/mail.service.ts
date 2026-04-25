@@ -46,6 +46,14 @@ export class MailService {
     return '$ ' + Math.round(cents / 100).toLocaleString('es-AR');
   }
 
+  /** Escape user-controlled strings before interpolation into HTML */
+  private esc(s: string | null | undefined): string {
+    if (!s) return '';
+    return String(s).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c] ?? c));
+  }
+
   private async send(subject: string, html: string, to?: string) {
     if (!this.transporter) {
       this.logger.debug(`Email skipped (not configured): ${subject}`);
@@ -113,7 +121,7 @@ export class MailService {
   private itemsTable(items: { name: string; quantity: number; unitPrice: number }[]): string {
     const rows = items.map(i => `
       <tr>
-        <td style="padding:8px 12px;border-bottom:1px solid #ede8e0;font-size:13px;color:#2a1f0f;">${i.name}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #ede8e0;font-size:13px;color:#2a1f0f;">${this.esc(i.name)}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #ede8e0;text-align:center;font-size:13px;color:#6b5c44;">${i.quantity}</td>
         <td style="padding:8px 12px;border-bottom:1px solid #ede8e0;text-align:right;font-size:13px;color:#2a1f0f;font-weight:600;">${this.fmt(i.unitPrice * i.quantity)}</td>
       </tr>`).join('');
@@ -206,14 +214,14 @@ export class MailService {
     const notesBlock = order.notes ? `
       <div style="background-color:#faf7f2;border-left:3px solid #c8a96a;padding:14px 18px;margin-bottom:20px;border-radius:0 8px 8px 0;">
         ${this.sectionTitle('Notas del comprador')}
-        <p style="margin:6px 0 0;font-size:14px;color:#2a1f0f;line-height:1.6;">${order.notes}</p>
+        <p style="margin:6px 0 0;font-size:14px;color:#2a1f0f;line-height:1.6;">${this.esc(order.notes)}</p>
       </div>` : '';
 
     // Shipping address block
     const addressBlock = order.shippingAddress ? `
       <div style="background-color:#faf7f2;border:1px solid #e0d8cc;border-radius:8px;padding:14px 18px;margin-bottom:20px;">
         ${this.sectionTitle('📍 Dirección de envío')}
-        <p style="margin:6px 0 0;font-size:14px;color:#2a1f0f;line-height:1.5;">${order.shippingAddress}</p>
+        <p style="margin:6px 0 0;font-size:14px;color:#2a1f0f;line-height:1.5;">${this.esc(order.shippingAddress)}</p>
       </div>` : '';
 
     const content = `
@@ -244,9 +252,9 @@ export class MailService {
         <div style="margin-bottom:20px;">
           ${this.sectionTitle('Cliente')}
           <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-            ${row('Nombre', order.customerName || '—')}
-            ${row('Email', order.customerEmail || '—')}
-            ${row('Teléfono', order.customerPhone || '—')}
+            ${row('Nombre', this.esc(order.customerName) || '—')}
+            ${row('Email', this.esc(order.customerEmail) || '—')}
+            ${row('Teléfono', this.esc(order.customerPhone) || '—')}
           </table>
         </div>
 
@@ -357,20 +365,20 @@ export class MailService {
     const trackingBlock = order.trackingNumber ? `
       <div style="background-color:#faf7f2;border:1px solid #e0d8cc;border-radius:8px;padding:14px 18px;margin-bottom:20px;">
         ${this.sectionTitle('📦 Número de seguimiento')}
-        <p style="margin:6px 0 0;font-size:22px;font-family:monospace;color:#c8a96a;font-weight:700;letter-spacing:.08em;">${order.trackingNumber}</p>
+        <p style="margin:6px 0 0;font-size:22px;font-family:monospace;color:#c8a96a;font-weight:700;letter-spacing:.08em;">${this.esc(order.trackingNumber)}</p>
       </div>` : '';
 
     const notesBlock = order.adminNotes ? `
       <div style="background-color:#faf7f2;border-left:3px solid #c8a96a;padding:14px 18px;margin-bottom:20px;border-radius:0 8px 8px 0;">
         ${this.sectionTitle('Mensaje del vendedor')}
-        <p style="margin:6px 0 0;font-size:14px;color:#2a1f0f;line-height:1.6;">${order.adminNotes}</p>
+        <p style="margin:6px 0 0;font-size:14px;color:#2a1f0f;line-height:1.6;">${this.esc(order.adminNotes)}</p>
       </div>` : '';
 
     const content = `
       <tr><td style="padding:32px;">
         <h2 style="margin:0 0 8px;font-size:20px;color:#1a1208;font-weight:900;">Pedido <span style="font-family:monospace;">#${orderNum}</span></h2>
         <p style="font-size:14px;color:#6b5c44;margin:0 0 20px;">
-          Hola <strong style="color:#1a1208;">${order.customerName || 'cliente'}</strong>, tu pedido fue actualizado.
+          Hola <strong style="color:#1a1208;">${this.esc(order.customerName) || 'cliente'}</strong>, tu pedido fue actualizado.
         </p>
 
         <div style="text-align:center;margin-bottom:24px;">
@@ -402,7 +410,7 @@ export class MailService {
       <tr><td style="padding:32px;">
         <h2 style="margin:0 0 8px;font-size:20px;color:#1a1208;font-weight:900;">Verificá tu cuenta</h2>
         <p style="font-size:14px;color:#6b5c44;margin:0 0 28px;line-height:1.6;">
-          Hola <strong style="color:#1a1208;">${data.name}</strong>, usá este código para verificar tu cuenta en Milán Matería:
+          Hola <strong style="color:#1a1208;">${this.esc(data.name)}</strong>, usá este código para verificar tu cuenta en Milán Matería:
         </p>
 
         <div style="text-align:center;margin-bottom:28px;">
@@ -445,13 +453,13 @@ export class MailService {
     const addressBlock = order.shippingAddress ? `
       <div style="background-color:#faf7f2;border:1px solid #e0d8cc;border-radius:8px;padding:14px 18px;margin-bottom:24px;">
         ${this.sectionTitle('📍 Dirección de envío')}
-        <p style="margin:6px 0 0;font-size:14px;color:#2a1f0f;line-height:1.5;">${order.shippingAddress}</p>
+        <p style="margin:6px 0 0;font-size:14px;color:#2a1f0f;line-height:1.5;">${this.esc(order.shippingAddress)}</p>
       </div>` : '';
 
     const content = `
       <tr><td style="padding:32px;">
         <h2 style="margin:0 0 16px;font-size:22px;color:#1a1208;font-weight:900;">
-          ¡Gracias por tu compra${firstName ? `, ${firstName}` : ''}! 🧉
+          ¡Gracias por tu compra${firstName ? `, ${this.esc(firstName)}` : ''}! 🧉
         </h2>
 
         <p style="font-size:15px;color:#2a1f0f;margin:0 0 12px;line-height:1.7;">
@@ -523,7 +531,7 @@ export class MailService {
       <tr><td style="padding:32px;">
         <h2 style="margin:0 0 8px;font-size:20px;color:#1a1208;font-weight:900;">Recuperar contraseña</h2>
         <p style="font-size:14px;color:#6b5c44;margin:0 0 28px;line-height:1.6;">
-          Hola <strong style="color:#1a1208;">${data.name}</strong>, recibimos una solicitud para restablecer tu contraseña.<br>
+          Hola <strong style="color:#1a1208;">${this.esc(data.name)}</strong>, recibimos una solicitud para restablecer tu contraseña.<br>
           Usá este código (válido por 1 hora):
         </p>
 

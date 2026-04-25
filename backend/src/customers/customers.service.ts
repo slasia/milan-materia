@@ -9,6 +9,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import type { Customer } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import {
   CustomerRepository,
   SafeCustomer,
@@ -34,7 +35,8 @@ export class CustomersService {
   ) {}
 
   private generateCode(): string {
-    return Math.floor(10000 + Math.random() * 90000).toString();
+    // 6-digit cryptographically secure random code
+    return crypto.randomInt(100000, 999999).toString();
   }
 
   private signToken(id: number, email: string): string {
@@ -43,7 +45,7 @@ export class CustomersService {
 
   private safeCustomer(c: Customer): SafeCustomer {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, verificationCode, verificationCodeExpires, ...safe } = c;
+    const { password, verificationCode, verificationCodeExpires, passwordResetCode, passwordResetExpires, ...safe } = c;
     return safe;
   }
 
@@ -216,7 +218,11 @@ export class CustomersService {
   async resetPassword(email: string, code: string, newPassword: string) {
     this.logger.log(`Reset password attempt — email: ${email}`);
     const customer = await this.customerRepo.findByEmail(email);
-    if (!customer || customer.passwordResetCode !== code) {
+    // Timing-safe comparison to prevent oracle attacks
+    const storedCode = customer?.passwordResetCode ?? '';
+    const codesMatch = storedCode.length > 0 &&
+      crypto.timingSafeEqual(Buffer.from(storedCode), Buffer.from(code.padEnd(storedCode.length, '\0').slice(0, storedCode.length)));
+    if (!customer || !codesMatch) {
       this.logger.warn(`Reset password failed — invalid code for: ${email}`);
       throw new BadRequestException('Código inválido o expirado');
     }

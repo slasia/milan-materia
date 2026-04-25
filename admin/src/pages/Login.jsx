@@ -16,7 +16,6 @@ export default function Login() {
     setLoading(true)
     try {
       const data = await login(email, password)
-      console.log('Login response:', data) // Debugging log
       if (data?.access_token) {
         setToken(data.access_token)
         navigate('/dashboard', { replace: true })
