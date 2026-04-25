@@ -5,7 +5,11 @@ import { PromotionsService } from "../promotions/promotions.service";
 import { MailService } from "../mail/mail.service";
 import { ShippingService } from "../shipping/shipping.service";
 import { CreateCheckoutDto } from "./dto/create-checkout.dto";
-import MercadoPagoConfig, { Preference, Payment, MerchantOrder } from "mercadopago";
+import MercadoPagoConfig, {
+  Preference,
+  Payment,
+  MerchantOrder,
+} from "mercadopago";
 
 @Injectable()
 export class PaymentsService {
@@ -184,9 +188,11 @@ export class PaymentsService {
     );
 
     const frontendUrl =
-      this.configService.get<string>("FRONTEND_URL") || "http://localhost:5174";
+      this.configService.get<string>("VITE_FRONTEND_URL") ||
+      "http://localhost:5174";
     const backendUrl =
-      this.configService.get<string>("BACKEND_URL") || "http://localhost:3001";
+      this.configService.get<string>("VITE_BACKEND_URL") ||
+      "http://localhost:3001";
 
     const mpItems: any[] = items.map((item) => {
       const product = productMap.get(item.productId);
@@ -401,24 +407,33 @@ export class PaymentsService {
     console.log(`[SYSTEM] Fetching merchant order #${merchantOrderId} from MP`);
     try {
       const client = new MerchantOrder(this.mpClient);
-      const merchantOrder = await client.get({ merchantOrderId: Number(merchantOrderId) });
+      const merchantOrder = await client.get({
+        merchantOrderId: Number(merchantOrderId),
+      });
 
-      console.log(`[SYSTEM] Merchant order #${merchantOrderId} — status: "${merchantOrder.order_status}", external_reference: "${merchantOrder.external_reference}", payments: ${merchantOrder.payments?.length ?? 0}`);
+      console.log(
+        `[SYSTEM] Merchant order #${merchantOrderId} — status: "${merchantOrder.order_status}", external_reference: "${merchantOrder.external_reference}", payments: ${merchantOrder.payments?.length ?? 0}`,
+      );
 
       if (!merchantOrder.payments || merchantOrder.payments.length === 0) {
-        console.log(`[SYSTEM] Merchant order #${merchantOrderId} has no payments yet, ignoring`);
+        console.log(
+          `[SYSTEM] Merchant order #${merchantOrderId} has no payments yet, ignoring`,
+        );
         return { received: true };
       }
 
       // Process each payment linked to this merchant order
       for (const p of merchantOrder.payments) {
         const paymentId = String(p.id);
-        console.log(`[SYSTEM] Merchant order #${merchantOrderId} → processing payment #${paymentId} (status: ${p.status})`);
-        await this.handleWebhook('payment', paymentId);
+        console.log(
+          `[SYSTEM] Merchant order #${merchantOrderId} → processing payment #${paymentId} (status: ${p.status})`,
+        );
+        await this.handleWebhook("payment", paymentId);
       }
-
     } catch (e) {
-      console.error(`[SYSTEM] Failed to process merchant order #${merchantOrderId}: ${e.message}`);
+      console.error(
+        `[SYSTEM] Failed to process merchant order #${merchantOrderId}: ${e.message}`,
+      );
     }
     return { received: true };
   }
