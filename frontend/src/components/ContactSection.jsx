@@ -42,11 +42,11 @@ export default function ContactSection() {
 
         <div className="contact-block">
           <h3>Colección</h3>
-          <a href="#imperiales">Línea Imperial</a>
-          <a href="#torpedos">Torpedos</a>
+          <a href="#imperial">Línea Imperial</a>
+          <a href="#torpedo">Torpedos</a>
           <a href="#algarrobo">Algarrobo</a>
           <a href="#acero">Acero Inox</a>
-          <a href="#bombillas">Bombillas</a>
+          <a href="#bombilla">Bombillas</a>
           <a href="#yerbas">Yerbas y Accesorios</a>
         </div>
 
