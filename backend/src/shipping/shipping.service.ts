@@ -32,10 +32,10 @@ export class ShippingService {
 
   async quote(destZip: string): Promise<ShippingQuote> {
     const cleanZip = (destZip || '').replace(/\D/g, '');
-    console.log(`[SHOP] Shipping quote requested — zip: ${cleanZip || '(empty)'}`);
+    this.logger.log(`Shipping quote requested — zip: ${cleanZip || '(empty)'}`);
 
     if (!cleanZip || !this.isConfigured) {
-      console.log(`[SHOP] Shipping quote skipped — ${!cleanZip ? 'empty zip' : 'Andreani not configured'}`);
+      this.logger.log(`Shipping quote skipped — ${!cleanZip ? 'empty zip' : 'Andreani not configured'}`);
       return { available: false, costCents: 0, estimatedDays: null, provider: 'none' };
     }
     return this.fetchQuote(cleanZip);
@@ -43,10 +43,10 @@ export class ShippingService {
 
   async quoteForCheckout(destZip: string): Promise<ShippingQuote> {
     const cleanZip = (destZip || '').replace(/\D/g, '');
-    console.log(`[SYSTEM] Checkout shipping quote — zip: ${cleanZip || '(empty)'}`);
+    this.logger.log(`Checkout shipping quote — zip: ${cleanZip || '(empty)'}`);
 
     if (!cleanZip || !this.isConfigured) {
-      console.log(`[SYSTEM] Checkout shipping skipped — ${!cleanZip ? 'empty zip' : 'Andreani not configured'}, shipping cost = $0`);
+      this.logger.log(`Checkout shipping skipped — ${!cleanZip ? 'empty zip' : 'Andreani not configured'}, shipping cost = $0`);
       return { available: false, costCents: 0, estimatedDays: null, provider: 'none' };
     }
     return this.fetchQuote(cleanZip);
@@ -54,7 +54,7 @@ export class ShippingService {
 
   private async fetchQuote(cleanZip: string): Promise<ShippingQuote> {
     try {
-      console.log(`[SYSTEM] Calling Andreani API — zip: ${cleanZip}`);
+      this.logger.log(`Calling Andreani API — zip: ${cleanZip}`);
       const token = await this.getToken();
       const contrato = this.config.get<string>('ANDREANI_CONTRATO');
       const cliente = this.config.get<string>('ANDREANI_CLIENTE');
@@ -76,7 +76,7 @@ export class ShippingService {
       });
 
       if (!res.ok) {
-        console.warn(`[SYSTEM] Andreani API returned HTTP ${res.status} for zip ${cleanZip}`);
+        this.logger.warn(`Andreani API returned HTTP ${res.status} for zip ${cleanZip}`);
         return { available: false, costCents: 0, estimatedDays: null, provider: 'none' };
       }
 
@@ -89,10 +89,10 @@ export class ShippingService {
       const totalARS = parseFloat(String(totalStr).replace(',', '.')) || 0;
       const costCents = Math.round(totalARS * 100);
 
-      console.log(`[SYSTEM] Andreani quote OK — zip: ${cleanZip}, cost: $${totalARS} ARS (${costCents} cents)`);
+      this.logger.log(`Andreani quote OK — zip: ${cleanZip}, cost: $${totalARS} ARS (${costCents} cents)`);
       return { available: true, costCents, estimatedDays: '3–5 días hábiles', provider: 'Andreani' };
     } catch (e) {
-      console.error(`[SYSTEM] Andreani API error — ${e.message}`);
+      this.logger.error(`Andreani API error — ${e.message}`);
       return { available: false, costCents: 0, estimatedDays: null, provider: 'none' };
     }
   }
@@ -100,11 +100,11 @@ export class ShippingService {
   private async getToken(): Promise<string> {
     const now = Date.now();
     if (this.cachedToken && now - this.tokenCachedAt < this.TOKEN_TTL) {
-      console.log('[SYSTEM] Andreani token — using cached token');
+      this.logger.log('Andreani token — using cached token');
       return this.cachedToken;
     }
 
-    console.log('[SYSTEM] Andreani token — requesting new token');
+    this.logger.log('Andreani token — requesting new token');
     const user = this.config.get<string>('ANDREANI_USER');
     const pass = this.config.get<string>('ANDREANI_PASS');
     const credentials = Buffer.from(`${user}:${pass}`).toString('base64');
@@ -121,7 +121,7 @@ export class ShippingService {
 
     this.cachedToken = token;
     this.tokenCachedAt = now;
-    console.log('[SYSTEM] Andreani token refreshed successfully');
+    this.logger.log('Andreani token refreshed successfully');
     return token;
   }
 }

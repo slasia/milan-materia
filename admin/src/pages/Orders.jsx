@@ -265,7 +265,14 @@ function UpdateOrderModal({ order, onClose, onUpdated }) {
             className="form-input"
             placeholder="Ej: AR123456789"
             value={tracking}
-            onChange={e => setTracking(e.target.value)}
+            onChange={e => {
+              const val = e.target.value
+              setTracking(val)
+              // Auto-switch to "shipped" when a tracking number is entered
+              if (val.trim() && status !== 'shipped' && status !== 'delivered') {
+                setStatus('shipped')
+              }
+            }}
           />
         </div>
 
@@ -304,6 +311,7 @@ export default function Orders() {
   const [error, setError] = useState(null)
   const [viewingOrderId, setViewingOrderId] = useState(null)
   const [editingOrder, setEditingOrder] = useState(null)
+  const [search, setSearch] = useState('')
 
   async function load() {
     try {
@@ -334,20 +342,49 @@ export default function Orders() {
     )
   }
 
+  const q = search.trim().toLowerCase()
+  const filtered = q
+    ? orders.filter(o => {
+        const name = (o.customerName || o.customer?.name || '').toLowerCase()
+        const email = (o.customerEmail || o.customer?.email || '').toLowerCase()
+        const status = (STATUS_LABELS[o.status] || o.status || '').toLowerCase()
+        const id = String(o.id)
+        return name.includes(q) || email.includes(q) || status.includes(q) || id.includes(q)
+      })
+    : orders
+
   return (
     <>
       <div className="page-header">
         <h1 className="page-title">Pedidos</h1>
         <span style={{ color: 'var(--muted)', fontSize: 12 }}>
-          {orders.length} pedido{orders.length !== 1 ? 's' : ''}
+          {filtered.length}{q ? ` de ${orders.length}` : ''} pedido{orders.length !== 1 ? 's' : ''}
         </span>
       </div>
 
+      <div className="customers-search-wrap">
+        <div className="customers-search-inner">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="8.5" cy="8.5" r="5.5"/><line x1="13" y1="13" x2="18" y2="18"/>
+          </svg>
+          <input
+            className="customers-search-input"
+            type="text"
+            placeholder="Buscar por cliente, email, ID o estado..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {search && (
+            <button className="customers-search-clear" onClick={() => setSearch('')}>✕</button>
+          )}
+        </div>
+      </div>
+
       <div className="table-card">
-        {orders.length === 0 ? (
+        {filtered.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">📋</div>
-            <p>No hay pedidos aún</p>
+            <p>{q ? 'Sin resultados para la búsqueda' : 'No hay pedidos aún'}</p>
           </div>
         ) : (
           <div className="table-scroll">
@@ -363,7 +400,7 @@ export default function Orders() {
                 </tr>
               </thead>
               <tbody>
-                {orders.map(order => (
+                {filtered.map(order => (
                   <tr key={order.id}>
                     <td
                       className="td-muted"

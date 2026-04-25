@@ -1,138 +1,99 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { ProductRepository, ProductWithRelations, ProductCreateData, ProductUpdateData } from './repositories/product.repository';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 
-const includeImages = {
-  category: { select: { id: true, name: true, slug: true } },
-  images: { orderBy: { sortOrder: 'asc' as const } },
-};
-
 @Injectable()
 export class ProductsService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(ProductsService.name);
 
-  async findAll(filters?: { category?: string; featured?: boolean }) {
-    const where: any = { active: true };
-    if (filters?.category) where.category = { slug: filters.category };
-    if (filters?.featured !== undefined) where.featured = filters.featured;
-    console.log(`[SHOP] Fetching products — filters: ${JSON.stringify(filters ?? {})}`);
+  constructor(private productRepo: ProductRepository) {}
 
-    const products = await this.prisma.product.findMany({
-      where,
-      include: includeImages,
-      orderBy: [{ featured: 'desc' }, { createdAt: 'desc' }],
-    });
-    console.log(`[SHOP] Returned ${products.length} products`);
+  async findAll(filters?: { category?: string; featured?: boolean }): Promise<ProductWithRelations[]> {
+    this.logger.log(`Fetching products — filters: ${JSON.stringify(filters ?? {})}`);
+    const products = await this.productRepo.findAll(filters);
+    this.logger.log(`Returned ${products.length} products`);
     return products;
   }
 
-  async findOne(id: number) {
-    const product = await this.prisma.product.findUnique({
-      where: { id },
-      include: includeImages,
-    });
+  async findOne(id: number): Promise<ProductWithRelations> {
+    const product = await this.productRepo.findById(id);
     if (!product) {
-      console.warn(`[SHOP] Product #${id} not found`);
+      this.logger.warn(`Product #${id} not found`);
       throw new NotFoundException(`Product #${id} not found`);
     }
     return product;
   }
 
-  async create(createProductDto: CreateProductDto) {
-    console.log(`[ADMIN] Creating product — name: "${createProductDto.name}"`);
-    const product = await this.prisma.product.create({
-      data: createProductDto,
-      include: includeImages,
-    });
-    console.log(`[ADMIN] Product created — id: ${product.id}, name: "${product.name}"`);
+  async create(createProductDto: CreateProductDto): Promise<ProductWithRelations> {
+    this.logger.log(`Creating product — name: "${createProductDto.name}"`);
+    const product = await this.productRepo.create(createProductDto as ProductCreateData);
+    this.logger.log(`Product created — id: ${product.id}, name: "${product.name}"`);
     return product;
   }
 
-  async update(id: number, updateProductDto: UpdateProductDto) {
+  async update(id: number, updateProductDto: UpdateProductDto): Promise<ProductWithRelations> {
     await this.findOne(id);
-    console.log(`[ADMIN] Updating product #${id} — fields: ${Object.keys(updateProductDto).join(', ')}`);
-    const product = await this.prisma.product.update({
-      where: { id },
-      data: updateProductDto,
-      include: includeImages,
-    });
-    console.log(`[ADMIN] Product #${id} updated`);
+    this.logger.log(`Updating product #${id} — fields: ${Object.keys(updateProductDto).join(', ')}`);
+    const product = await this.productRepo.update(id, updateProductDto as ProductUpdateData);
+    this.logger.log(`Product #${id} updated`);
     return product;
   }
 
-  async remove(id: number) {
+  async remove(id: number): Promise<void> {
     await this.findOne(id);
-    console.log(`[ADMIN] Deleting product #${id}`);
-    const result = await this.prisma.product.delete({ where: { id } });
-    console.log(`[ADMIN] Product #${id} deleted`);
-    return result;
+    this.logger.log(`Deleting product #${id}`);
+    await this.productRepo.delete(id);
+    this.logger.log(`Product #${id} deleted`);
   }
 
-  async updateImage(id: number, imageUrl: string) {
+  async updateImage(id: number, imageUrl: string): Promise<ProductWithRelations> {
     await this.findOne(id);
-    console.log(`[ADMIN] Updating cover image for product #${id}`);
+    this.logger.log(`Updating cover image for product #${id}`);
 
-    await this.prisma.product.update({ where: { id }, data: { imageUrl } });
+    await this.productRepo.updateImageUrl(id, imageUrl);
 
-    const firstImg = await this.prisma.productImage.findFirst({
-      where: { productId: id },
-      orderBy: { sortOrder: 'asc' },
-    });
-
+    const firstImg = await this.productRepo.findFirstImage(id);
     if (firstImg) {
-      await this.prisma.productImage.update({
-        where: { id: firstImg.id },
-        data: { url: imageUrl, sortOrder: 0 },
-      });
+      await this.productRepo.updateImage(firstImg.id, { url: imageUrl, sortOrder: 0 });
     } else {
-      await this.prisma.productImage.create({
-        data: { productId: id, url: imageUrl, sortOrder: 0 },
-      });
+      await this.productRepo.createImage(id, imageUrl, 0);
     }
 
-    console.log(`[ADMIN] Cover image updated for product #${id}`);
+    this.logger.log(`Cover image updated for product #${id}`);
     return this.findOne(id);
   }
 
   async addImage(productId: number, url: string) {
     await this.findOne(productId);
-    const count = await this.prisma.productImage.count({ where: { productId } });
-    console.log(`[ADMIN] Adding image to product #${productId} (current count: ${count})`);
+    const count = await this.productRepo.countImages(productId);
+    this.logger.log(`Adding image to product #${productId} (current count: ${count})`);
 
-    const image = await this.prisma.productImage.create({
-      data: { productId, url, sortOrder: count },
-    });
+    const image = await this.productRepo.createImage(productId, url, count);
 
     if (count === 0) {
-      await this.prisma.product.update({ where: { id: productId }, data: { imageUrl: url } });
-      console.log(`[ADMIN] First image set as cover for product #${productId}`);
+      await this.productRepo.updateImageUrl(productId, url);
+      this.logger.log(`First image set as cover for product #${productId}`);
     }
 
-    console.log(`[ADMIN] Image #${image.id} added to product #${productId}`);
+    this.logger.log(`Image #${image.id} added to product #${productId}`);
     return image;
   }
 
-  async removeImage(productId: number, imageId: number) {
-    const image = await this.prisma.productImage.findUnique({ where: { id: imageId } });
+  async removeImage(productId: number, imageId: number): Promise<{ deleted: number }> {
+    const image = await this.productRepo.findImageById(imageId);
     if (!image || image.productId !== productId) {
-      console.warn(`[ADMIN] Image #${imageId} not found for product #${productId}`);
+      this.logger.warn(`Image #${imageId} not found for product #${productId}`);
       throw new NotFoundException('Imagen no encontrada');
     }
 
-    console.log(`[ADMIN] Removing image #${imageId} from product #${productId}`);
-    await this.prisma.productImage.delete({ where: { id: imageId } });
+    this.logger.log(`Removing image #${imageId} from product #${productId}`);
+    await this.productRepo.deleteImage(imageId);
 
-    const first = await this.prisma.productImage.findFirst({
-      where: { productId },
-      orderBy: { sortOrder: 'asc' },
-    });
-    await this.prisma.product.update({
-      where: { id: productId },
-      data: { imageUrl: first?.url ?? null },
-    });
+    const first = await this.productRepo.findFirstImage(productId);
+    await this.productRepo.updateImageUrl(productId, first?.url ?? null);
 
-    console.log(`[ADMIN] Image #${imageId} removed — new cover: ${first?.url ?? 'none'}`);
+    this.logger.log(`Image #${imageId} removed — new cover: ${first?.url ?? 'none'}`);
     return { deleted: imageId };
   }
 }

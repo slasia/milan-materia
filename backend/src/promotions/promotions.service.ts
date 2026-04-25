@@ -1,37 +1,33 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import type { Promotion, Prisma } from '@prisma/client';
+import { PromotionRepository } from './repositories/promotion.repository';
 import { CreatePromotionDto } from './dto/create-promotion.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
 
+export type PromoValidationResult =
+  | { valid: false; message: string }
+  | { valid: true; discountAmount: number; promotionId: number; discountPct: number | null; title: string };
+
 @Injectable()
 export class PromotionsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private promotionRepo: PromotionRepository) {}
 
-  getActive(type?: string) {
-    const where: any = { active: true };
-    if (type) where.type = type;
-    return this.prisma.promotion.findMany({
-      where,
-      orderBy: { createdAt: 'asc' },
-    });
+  async getActive(type?: string): Promise<Promotion[]> {
+    return this.promotionRepo.findAll({ activeOnly: true, type });
   }
 
-  findAll() {
-    return this.prisma.promotion.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
+  async findAll(): Promise<Promotion[]> {
+    return this.promotionRepo.findAll();
   }
 
-  async findOne(id: number) {
-    const promotion = await this.prisma.promotion.findUnique({ where: { id } });
+  async findOne(id: number): Promise<Promotion> {
+    const promotion = await this.promotionRepo.findById(id);
     if (!promotion) throw new NotFoundException(`Promotion #${id} not found`);
     return promotion;
   }
 
-  async validateCode(code: string, cartTotal: number) {
-    const promotion = await this.prisma.promotion.findUnique({
-      where: { code },
-    });
+  async validateCode(code: string, cartTotal: number): Promise<PromoValidationResult> {
+    const promotion = await this.promotionRepo.findByCode(code);
 
     if (!promotion || !promotion.active) {
       return { valid: false, message: 'Código inválido o inactivo' };
@@ -70,17 +66,17 @@ export class PromotionsService {
     };
   }
 
-  create(createPromotionDto: CreatePromotionDto) {
-    return this.prisma.promotion.create({ data: createPromotionDto });
+  async create(createPromotionDto: CreatePromotionDto): Promise<Promotion> {
+    return this.promotionRepo.create(createPromotionDto as Prisma.PromotionCreateInput);
   }
 
-  async update(id: number, updatePromotionDto: UpdatePromotionDto) {
+  async update(id: number, updatePromotionDto: UpdatePromotionDto): Promise<Promotion> {
     await this.findOne(id);
-    return this.prisma.promotion.update({ where: { id }, data: updatePromotionDto });
+    return this.promotionRepo.update(id, updatePromotionDto as Prisma.PromotionUpdateInput);
   }
 
-  async remove(id: number) {
+  async remove(id: number): Promise<Promotion> {
     await this.findOne(id);
-    return this.prisma.promotion.delete({ where: { id } });
+    return this.promotionRepo.delete(id);
   }
 }

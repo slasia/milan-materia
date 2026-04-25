@@ -1,65 +1,58 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import type { Category, Prisma } from '@prisma/client';
+import { CategoryRepository, CategoryWithCount } from './repositories/category.repository';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @Injectable()
 export class CategoriesService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(CategoriesService.name);
 
-  async findAll() {
-    console.log('[SHOP] Fetching active categories');
-    const cats = await this.prisma.category.findMany({
-      where: { active: true },
-      include: { _count: { select: { products: true } } },
-      orderBy: { sortOrder: 'asc' },
-    });
-    console.log(`[SHOP] Returned ${cats.length} categories`);
+  constructor(private categoryRepo: CategoryRepository) {}
+
+  async findAll(): Promise<CategoryWithCount[]> {
+    this.logger.log('Fetching active categories');
+    const cats = await this.categoryRepo.findAll(true);
+    this.logger.log(`Returned ${cats.length} categories`);
     return cats;
   }
 
-  async findAllAdmin() {
-    console.log('[ADMIN] Fetching all categories');
-    const cats = await this.prisma.category.findMany({
-      include: { _count: { select: { products: true } } },
-      orderBy: { sortOrder: 'asc' },
-    });
-    console.log(`[ADMIN] Returned ${cats.length} categories`);
+  async findAllAdmin(): Promise<CategoryWithCount[]> {
+    this.logger.log('Fetching all categories (admin)');
+    const cats = await this.categoryRepo.findAll(false);
+    this.logger.log(`Returned ${cats.length} categories`);
     return cats;
   }
 
-  async findOne(id: number) {
-    const category = await this.prisma.category.findUnique({
-      where: { id },
-      include: { _count: { select: { products: true } } },
-    });
+  async findOne(id: number): Promise<CategoryWithCount> {
+    const category = await this.categoryRepo.findById(id);
     if (!category) {
-      console.warn(`[ADMIN] Category #${id} not found`);
+      this.logger.warn(`Category #${id} not found`);
       throw new NotFoundException(`Category #${id} not found`);
     }
     return category;
   }
 
-  async create(createCategoryDto: CreateCategoryDto) {
-    console.log(`[ADMIN] Creating category — name: "${createCategoryDto.name}", slug: "${createCategoryDto.slug}"`);
-    const cat = await this.prisma.category.create({ data: createCategoryDto });
-    console.log(`[ADMIN] Category created — id: ${cat.id}`);
+  async create(createCategoryDto: CreateCategoryDto): Promise<Category> {
+    this.logger.log(`Creating category — name: "${createCategoryDto.name}", slug: "${createCategoryDto.slug}"`);
+    const cat = await this.categoryRepo.create(createCategoryDto as Prisma.CategoryCreateInput);
+    this.logger.log(`Category created — id: ${cat.id}`);
     return cat;
   }
 
-  async update(id: number, updateCategoryDto: UpdateCategoryDto) {
+  async update(id: number, updateCategoryDto: UpdateCategoryDto): Promise<Category> {
     await this.findOne(id);
-    console.log(`[ADMIN] Updating category #${id}`);
-    const cat = await this.prisma.category.update({ where: { id }, data: updateCategoryDto });
-    console.log(`[ADMIN] Category #${id} updated`);
+    this.logger.log(`Updating category #${id}`);
+    const cat = await this.categoryRepo.update(id, updateCategoryDto as Prisma.CategoryUpdateInput);
+    this.logger.log(`Category #${id} updated`);
     return cat;
   }
 
-  async remove(id: number) {
+  async remove(id: number): Promise<Category> {
     await this.findOne(id);
-    console.log(`[ADMIN] Deleting category #${id}`);
-    const result = await this.prisma.category.delete({ where: { id } });
-    console.log(`[ADMIN] Category #${id} deleted`);
+    this.logger.log(`Deleting category #${id}`);
+    const result = await this.categoryRepo.delete(id);
+    this.logger.log(`Category #${id} deleted`);
     return result;
   }
 }

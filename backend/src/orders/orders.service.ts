@@ -1,102 +1,88 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import type { Order } from '@prisma/client';
+import { OrderRepository, OrderWithRelations, PaginatedOrders } from './repositories/order.repository';
 import { MailService } from '../mail/mail.service';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService, private mail: MailService) {}
+  private readonly logger = new Logger(OrdersService.name);
 
-  async findOne(id: number) {
-    console.log(`[SHOP] Fetching order #${id}`);
-    const order = await this.prisma.order.findUnique({
-      where: { id },
-      include: {
-        customer: {
-          select: { id: true, email: true, name: true, phone: true, city: true, province: true },
-        },
-        items: {
-          include: {
-            product: { select: { id: true, name: true, imageUrl: true } },
-          },
-        },
-      },
-    });
+  constructor(
+    private orderRepo: OrderRepository,
+    private mail: MailService,
+  ) {}
+
+  async findOne(id: number): Promise<OrderWithRelations> {
+    this.logger.log(`Fetching order #${id}`);
+    const order = await this.orderRepo.findById(id);
     if (!order) {
-      console.warn(`[SHOP] Order #${id} not found`);
+      this.logger.warn(`Order #${id} not found`);
       throw new NotFoundException(`Order #${id} not found`);
     }
-    console.log(`[SHOP] Order #${id} found — status: ${order.status}, customer: ${order.customerEmail ?? 'guest'}`);
+    this.logger.log(`Order #${id} found — status: ${order.status}, customer: ${order.customerEmail ?? 'guest'}`);
     return order;
   }
 
-  async findAll(filters?: { status?: string; page?: number; limit?: number }) {
-    const page = filters?.page || 1;
+  async findAll(filters?: { status?: string; page?: number; limit?: number }): Promise<
+    PaginatedOrders & { meta: { total: number; page: number; limit: number; pages: number } }
+  > {
+    const page  = filters?.page  || 1;
     const limit = filters?.limit || 20;
-    const skip = (page - 1) * limit;
-    const where: any = {};
-    if (filters?.status) where.status = filters.status;
+    this.logger.log(`Fetching orders — page: ${page}, limit: ${limit}, status: ${filters?.status ?? 'all'}`);
 
-    console.log(`[ADMIN] Fetching orders — page: ${page}, limit: ${limit}, status: ${filters?.status ?? 'all'}`);
+    const { data, total } = await this.orderRepo.findAll(filters);
+    this.logger.log(`Returned ${data.length} orders (total: ${total})`);
 
-    const [orders, total] = await Promise.all([
-      this.prisma.order.findMany({
-        where,
-        include: {
-          customer: { select: { id: true, email: true, name: true, phone: true } },
-          items: {
-            include: { product: { select: { id: true, name: true } } },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
-      this.prisma.order.count({ where }),
-    ]);
-
-    console.log(`[ADMIN] Returned ${orders.length} orders (total: ${total})`);
     return {
-      data: orders,
+      data,
+      total,
       meta: { total, page, limit, pages: Math.ceil(total / limit) },
     };
   }
 
-  async updateStatus(id: number, dto: UpdateOrderStatusDto) {
+  async updateStatus(id: number, dto: UpdateOrderStatusDto): Promise<Order> {
     const existing = await this.findOne(id);
-    console.log(`[ADMIN] Updating order #${id} status: "${existing.status}" → "${dto.status}"`);
+    this.logger.log(`Updating order #${id} status: "${existing.status}" → "${dto.status}"`);
 
-    const updateData: any = { status: dto.status };
+    // Auto-set status to 'shipped' when a tracking number is provided
+    let resolvedStatus = dto.status;
+    if (dto.trackingNumber?.trim() && !['shipped', 'delivered'].includes(resolvedStatus)) {
+      resolvedStatus = 'shipped';
+      this.logger.log(`Order #${id} — status auto-set to 'shipped' because tracking number was provided`);
+    }
+
+    const updateData: Record<string, string | undefined> = { status: resolvedStatus };
     if (dto.trackingNumber !== undefined) updateData.trackingNumber = dto.trackingNumber;
-    if (dto.adminNotes !== undefined) updateData.adminNotes = dto.adminNotes;
+    if (dto.adminNotes     !== undefined) updateData.adminNotes     = dto.adminNotes;
 
-    const updated = await this.prisma.order.update({ where: { id }, data: updateData });
+    const updated = await this.orderRepo.update(id, updateData);
 
     const customerEmail = existing.customerEmail ?? existing.customer?.email;
     const customerName  = existing.customerName  ?? existing.customer?.name;
 
-    console.log(`[ADMIN] Order #${id} updated — notifying admin and customer (${customerEmail ?? 'no email'})`);
+    this.logger.log(`Order #${id} updated — notifying admin and customer (${customerEmail ?? 'no email'})`);
 
     this.mail.sendStatusUpdate({
-      id: updated.id,
-      status: updated.status,
-      total: updated.total,
-      customerName: customerName ?? undefined,
+      id:            updated.id,
+      status:        updated.status,
+      total:         updated.total,
+      customerName:  customerName  ?? undefined,
       customerEmail: customerEmail ?? undefined,
     }).catch(() => {});
 
     if (customerEmail) {
       this.mail.sendCustomerStatusUpdate({
-        id: updated.id,
-        status: updated.status,
-        total: updated.total,
-        customerName: customerName ?? undefined,
+        id:             updated.id,
+        status:         updated.status,
+        total:          updated.total,
+        customerName:   customerName  ?? undefined,
         customerEmail,
         trackingNumber: updated.trackingNumber ?? undefined,
-        adminNotes: updated.adminNotes ?? undefined,
+        adminNotes:     updated.adminNotes     ?? undefined,
         items: existing.items.map(i => ({
-          name: i.product?.name ?? 'Producto',
-          quantity: i.quantity,
+          name:      i.product?.name ?? 'Producto',
+          quantity:  i.quantity,
           unitPrice: i.unitPrice,
         })),
       }).catch(() => {});

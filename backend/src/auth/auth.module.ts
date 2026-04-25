@@ -5,6 +5,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
+import { AdminRepository } from './repositories/admin.repository';
+import { PrismaAdminRepository } from './repositories/prisma-admin.repository';
 
 @Module({
   imports: [
@@ -20,7 +22,11 @@ import { JwtStrategy } from './jwt.strategy';
       inject: [ConfigService],
     }),
   ],
-  providers: [AuthService, JwtStrategy],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    { provide: AdminRepository, useClass: PrismaAdminRepository },
+  ],
   controllers: [AuthController],
   exports: [AuthService, JwtModule],
 })

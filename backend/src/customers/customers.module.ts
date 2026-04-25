@@ -4,13 +4,15 @@ import { ConfigService } from '@nestjs/config';
 import { CustomersService } from './customers.service';
 import { CustomersController, AdminCustomersController } from './customers.controller';
 import { RequireCustomerJwtGuard, OptionalCustomerJwtGuard } from './customer-jwt.guard';
-import { PrismaModule } from '../prisma/prisma.module';
 import { MailModule } from '../mail/mail.module';
+import { CustomerRepository } from './repositories/customer.repository';
+import { PrismaCustomerRepository } from './repositories/prisma-customer.repository';
+import { OrdersModule } from '../orders/orders.module';
 
 @Module({
   imports: [
-    PrismaModule,
     MailModule,
+    OrdersModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
@@ -19,8 +21,13 @@ import { MailModule } from '../mail/mail.module';
       }),
     }),
   ],
-  providers: [CustomersService, RequireCustomerJwtGuard, OptionalCustomerJwtGuard],
+  providers: [
+    CustomersService,
+    RequireCustomerJwtGuard,
+    OptionalCustomerJwtGuard,
+    { provide: CustomerRepository, useClass: PrismaCustomerRepository },
+  ],
   controllers: [CustomersController, AdminCustomersController],
-  exports: [CustomersService, JwtModule, RequireCustomerJwtGuard, OptionalCustomerJwtGuard],
+  exports: [CustomersService, JwtModule, RequireCustomerJwtGuard, OptionalCustomerJwtGuard, CustomerRepository],
 })
 export class CustomersModule {}

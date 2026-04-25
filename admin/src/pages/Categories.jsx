@@ -3,6 +3,15 @@ import Modal from '../components/Modal.jsx'
 import { useToast } from '../components/Toast.jsx'
 import { getAllCategories, createCategory, updateCategory, deleteCategory } from '../api.js'
 
+function SearchIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="8.5" cy="8.5" r="5.5"/>
+      <line x1="13" y1="13" x2="18" y2="18"/>
+    </svg>
+  )
+}
+
 function slugify(text) {
   return text
     .toLowerCase()
@@ -193,6 +202,7 @@ export default function Categories() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingCat, setEditingCat] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
+  const [search, setSearch] = useState('')
 
   async function load() {
     try {
@@ -248,6 +258,15 @@ export default function Categories() {
     )
   }
 
+  const q = search.trim().toLowerCase()
+  const filtered = q
+    ? categories.filter(cat =>
+        cat.name?.toLowerCase().includes(q) ||
+        cat.slug?.toLowerCase().includes(q) ||
+        cat.description?.toLowerCase().includes(q)
+      )
+    : categories
+
   return (
     <>
       <div className="page-header">
@@ -262,17 +281,39 @@ export default function Categories() {
         </button>
       </div>
 
+      <div className="customers-search-wrap">
+        <div className="customers-search-inner">
+          <SearchIcon />
+          <input
+            className="customers-search-input"
+            type="text"
+            placeholder="Buscar por nombre o slug..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {search && (
+            <button className="customers-search-clear" onClick={() => setSearch('')}>✕</button>
+          )}
+        </div>
+      </div>
+
       <div className="table-card">
-        {categories.length === 0 ? (
+        {filtered.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">🏷️</div>
-            <p>No hay categorías aún</p>
-            <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>
-              Creá categorías para poder asignar productos y organizar la tienda.
-            </p>
-            <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={openCreate}>
-              + Crear primera categoría
-            </button>
+            {q ? (
+              <p>Sin resultados para la búsqueda</p>
+            ) : (
+              <>
+                <p>No hay categorías aún</p>
+                <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>
+                  Creá categorías para poder asignar productos y organizar la tienda.
+                </p>
+                <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={openCreate}>
+                  + Crear primera categoría
+                </button>
+              </>
+            )}
           </div>
         ) : (
           <div className="table-scroll">
@@ -289,7 +330,7 @@ export default function Categories() {
                 </tr>
               </thead>
               <tbody>
-                {categories.map(cat => (
+                {filtered.map(cat => (
                   <tr key={cat.id}>
                     <td style={{ fontWeight: 600 }}>{cat.name}</td>
                     <td><code style={{ fontSize: 12, color: 'var(--muted)' }}>{cat.slug}</code></td>

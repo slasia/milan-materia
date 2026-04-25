@@ -9,6 +9,15 @@ const BADGE_COLORS = {
   sale: 'badge-red',
 }
 
+function SearchIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="8.5" cy="8.5" r="5.5"/>
+      <line x1="13" y1="13" x2="18" y2="18"/>
+    </svg>
+  )
+}
+
 function CameraIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -43,6 +52,7 @@ export default function Products() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
+  const [search, setSearch] = useState('')
   const fileInputRefs = useRef({})
 
   async function load() {
@@ -109,6 +119,18 @@ export default function Products() {
     )
   }
 
+  const q = search.trim().toLowerCase()
+  const filtered = q
+    ? products.filter(p => {
+        const catName = p.category?.name || categories.find(c => c.id === p.categoryId)?.name || ''
+        return (
+          p.name?.toLowerCase().includes(q) ||
+          catName.toLowerCase().includes(q) ||
+          p.badge?.toLowerCase().includes(q)
+        )
+      })
+    : products
+
   return (
     <>
       <div className="page-header">
@@ -118,11 +140,27 @@ export default function Products() {
         </button>
       </div>
 
+      <div className="customers-search-wrap">
+        <div className="customers-search-inner">
+          <SearchIcon />
+          <input
+            className="customers-search-input"
+            type="text"
+            placeholder="Buscar por nombre o categoría..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {search && (
+            <button className="customers-search-clear" onClick={() => setSearch('')}>✕</button>
+          )}
+        </div>
+      </div>
+
       <div className="table-card">
-        {products.length === 0 ? (
+        {filtered.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">📦</div>
-            <p>No hay productos aún</p>
+            <p>{q ? 'Sin resultados para la búsqueda' : 'No hay productos aún'}</p>
           </div>
         ) : (
           <div className="table-scroll">
@@ -139,7 +177,7 @@ export default function Products() {
                 </tr>
               </thead>
               <tbody>
-                {products.map(product => {
+                {filtered.map(product => {
                   const imgSrc = imgUrl(product.images?.[0]?.url || product.imageUrl)
                   const catName = product.category?.name || categories.find(c => c.id === product.categoryId)?.name || '—'
                   return (

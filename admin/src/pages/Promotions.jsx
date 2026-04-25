@@ -58,6 +58,7 @@ export default function Promotions() {
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
   const [formErrors, setFormErrors] = useState({})
+  const [search, setSearch] = useState('')
 
   async function load() {
     try {
@@ -168,6 +169,16 @@ export default function Promotions() {
     )
   }
 
+  const q = search.trim().toLowerCase()
+  const filtered = q
+    ? promos.filter(p =>
+        p.title?.toLowerCase().includes(q) ||
+        p.code?.toLowerCase().includes(q) ||
+        (TYPE_LABELS[p.type] || p.type || '').toLowerCase().includes(q) ||
+        p.description?.toLowerCase().includes(q)
+      )
+    : promos
+
   return (
     <>
       <div className="page-header">
@@ -177,11 +188,29 @@ export default function Promotions() {
         </button>
       </div>
 
+      <div className="customers-search-wrap">
+        <div className="customers-search-inner">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="8.5" cy="8.5" r="5.5"/><line x1="13" y1="13" x2="18" y2="18"/>
+          </svg>
+          <input
+            className="customers-search-input"
+            type="text"
+            placeholder="Buscar por título, código o tipo..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {search && (
+            <button className="customers-search-clear" onClick={() => setSearch('')}>✕</button>
+          )}
+        </div>
+      </div>
+
       <div className="table-card">
-        {promos.length === 0 ? (
+        {filtered.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">⭐</div>
-            <p>No hay promociones aún</p>
+            <p>{q ? 'Sin resultados para la búsqueda' : 'No hay promociones aún'}</p>
           </div>
         ) : (
           <div className="table-scroll">
@@ -198,7 +227,7 @@ export default function Promotions() {
                 </tr>
               </thead>
               <tbody>
-                {promos.map(promo => (
+                {filtered.map(promo => (
                   <tr key={promo.id}>
                     <td>
                       <div style={{ fontWeight: 600 }}>{promo.title}</div>

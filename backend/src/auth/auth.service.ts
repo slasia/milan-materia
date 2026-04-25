@@ -1,29 +1,32 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaService } from '../prisma/prisma.service';
+import type { Admin } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { AdminRepository } from './repositories/admin.repository';
 import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
-    private prisma: PrismaService,
+    private adminRepo: AdminRepository,
     private jwtService: JwtService,
   ) {}
 
-  async validateAdmin(email: string, password: string) {
-    console.log(`[ADMIN] Login attempt — email: ${email}`);
-    const admin = await this.prisma.admin.findUnique({ where: { email } });
+  async validateAdmin(email: string, password: string): Promise<Admin> {
+    this.logger.log(`Login attempt — email: ${email}`);
+    const admin = await this.adminRepo.findByEmail(email);
     if (!admin) {
-      console.warn(`[ADMIN] Login failed — admin not found: ${email}`);
+      this.logger.warn(`Login failed — admin not found: ${email}`);
       throw new UnauthorizedException('Invalid credentials');
     }
     const isPasswordValid = await bcrypt.compare(password, admin.password);
     if (!isPasswordValid) {
-      console.warn(`[ADMIN] Login failed — wrong password for: ${email}`);
+      this.logger.warn(`Login failed — wrong password for: ${email}`);
       throw new UnauthorizedException('Invalid credentials');
     }
-    console.log(`[ADMIN] Login successful — admin: ${email}`);
+    this.logger.log(`Login successful — admin: ${email}`);
     return admin;
   }
 
