@@ -345,18 +345,7 @@ export default function Orders() {
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, ...changes } : o))
   }
 
-  if (loading) return <div className="loading-wrap"><div className="spinner" /></div>
-
-  if (error) {
-    return (
-      <div className="error-state">
-        <p>Error al cargar pedidos</p>
-        <p style={{ fontSize: 12, opacity: 0.7 }}>{error}</p>
-        <button className="btn btn-ghost btn-sm" style={{ marginTop: 12 }} onClick={load}>Reintentar</button>
-      </div>
-    )
-  }
-
+  // ── Derived state — must be before any early returns (Rules of Hooks) ──
   const q = search.trim().toLowerCase()
   const filtered = q
     ? orders.filter(o => {
@@ -369,6 +358,18 @@ export default function Orders() {
     : orders
 
   const { sorted, sortKey, sortDir, handleSort } = useSortable(filtered, 'createdAt', 'desc')
+
+  if (loading) return <div className="loading-wrap"><div className="spinner" /></div>
+
+  if (error) {
+    return (
+      <div className="error-state">
+        <p>Error al cargar pedidos</p>
+        <p style={{ fontSize: 12, opacity: 0.7 }}>{error}</p>
+        <button className="btn btn-ghost btn-sm" style={{ marginTop: 12 }} onClick={load}>Reintentar</button>
+      </div>
+    )
+  }
 
   return (
     <>

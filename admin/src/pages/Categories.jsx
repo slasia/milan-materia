@@ -302,18 +302,7 @@ export default function Categories() {
     })
   }
 
-  if (loading) return <div className="loading-wrap"><div className="spinner" /></div>
-
-  if (error) {
-    return (
-      <div className="error-state">
-        <p>Error al cargar categorías</p>
-        <p style={{ fontSize: 12, opacity: 0.7 }}>{error}</p>
-        <button className="btn btn-ghost btn-sm" style={{ marginTop: 12 }} onClick={load}>Reintentar</button>
-      </div>
-    )
-  }
-
+  // ── Derived state — must be before any early returns (Rules of Hooks) ──
   const q = search.trim().toLowerCase()
   const filtered = q
     ? categories.filter(cat =>
@@ -326,6 +315,18 @@ export default function Categories() {
   const { sorted, sortKey, sortDir, handleSort } = useSortable(filtered)
   const visibleIds = sorted.map(c => c.id)
   const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selected.has(id))
+
+  if (loading) return <div className="loading-wrap"><div className="spinner" /></div>
+
+  if (error) {
+    return (
+      <div className="error-state">
+        <p>Error al cargar categorías</p>
+        <p style={{ fontSize: 12, opacity: 0.7 }}>{error}</p>
+        <button className="btn btn-ghost btn-sm" style={{ marginTop: 12 }} onClick={load}>Reintentar</button>
+      </div>
+    )
+  }
 
   return (
     <>
