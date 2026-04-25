@@ -5,7 +5,7 @@ import { PromotionsService } from "../promotions/promotions.service";
 import { MailService } from "../mail/mail.service";
 import { ShippingService } from "../shipping/shipping.service";
 import { CreateCheckoutDto } from "./dto/create-checkout.dto";
-import MercadoPagoConfig, { Preference, Payment } from "mercadopago";
+import MercadoPagoConfig, { Preference, Payment, MerchantOrder } from "mercadopago";
 
 @Injectable()
 export class PaymentsService {
@@ -394,6 +394,19 @@ export class PaymentsService {
       );
     }
 
+    return { received: true };
+  }
+
+  async handleMerchantOrderWebhook(merchantOrderId: string) {
+    console.log(`[SYSTEM] Fetching merchant order #${merchantOrderId} from MP`);
+    try {
+      const client = new MerchantOrder(this.mpClient);
+      const order = await client.get({ merchantOrderId: Number(merchantOrderId) });
+      console.log(`[SYSTEM] Merchant order #${merchantOrderId} full response:`);
+      console.log(JSON.stringify(order, null, 2));
+    } catch (e) {
+      console.error(`[SYSTEM] Failed to fetch merchant order #${merchantOrderId}: ${e.message}`);
+    }
     return { received: true };
   }
 }

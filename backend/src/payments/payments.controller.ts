@@ -116,9 +116,14 @@ export class PaymentsController {
     }
 
     const resolvedType = type || body?.type;
-    const resolvedId   = paymentId || dataId || body?.data?.id;
+    const resolvedId   = paymentId || dataId || body?.data?.id || body?.id;
     console.log(`MP WEBHOOK — resolved type: "${resolvedType}" | resolved id: "${resolvedId}"`);
     console.log('══════════════════════════════════════════');
+
+    // Route by event type
+    if (resolvedType === 'topic_merchant_order_wh' || resolvedType === 'merchant_order') {
+      return this.paymentsService.handleMerchantOrderWebhook(resolvedId);
+    }
 
     return this.paymentsService.handleWebhook(resolvedType, resolvedId);
   }
