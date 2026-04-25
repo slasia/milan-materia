@@ -976,6 +976,61 @@
     footer p { font-size: 12px; color: var(--muted); text-align: right; }
     footer a { color: var(--gold); }
 
+    /* ===== CART DRAWER ===== */
+    .cart-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.6);
+      z-index: 400; opacity: 0; pointer-events: none; transition: opacity .3s;
+    }
+    .cart-overlay.open { opacity: 1; pointer-events: auto; }
+    .cart-drawer {
+      position: fixed; top: 0; right: 0; height: 100vh; width: 380px; max-width: 100vw;
+      background: var(--bg2); border-left: 1px solid var(--border);
+      z-index: 401; display: flex; flex-direction: column;
+      transform: translateX(100%); transition: transform .35s cubic-bezier(.4,0,.2,1);
+    }
+    .cart-drawer.open { transform: translateX(0); }
+    .cart-drawer-hd {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 24px; border-bottom: 1px solid var(--border);
+      font-family: 'Josefin Sans', sans-serif; font-size: 13px; font-weight: 700;
+      letter-spacing: .12em; text-transform: uppercase; color: var(--gold);
+    }
+    .cart-drawer-close {
+      background: none; border: none; color: var(--muted); font-size: 20px;
+      cursor: pointer; line-height: 1; padding: 4px;
+      transition: color .2s;
+    }
+    .cart-drawer-close:hover { color: var(--gold); }
+    .cart-items { flex: 1; overflow-y: auto; padding: 16px; }
+    .cart-item {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 0; border-bottom: 1px solid var(--border);
+    }
+    .cart-item img { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; background: var(--surface); flex-shrink: 0; }
+    .cart-item-info { flex: 1; min-width: 0; }
+    .cart-item-name { font-family: 'Josefin Sans', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cart-item-price { font-size: 13px; color: var(--gold); margin-top: 3px; }
+    .cart-item-qty { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .cart-item-qty button {
+      width: 26px; height: 26px; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--gold); font-size: 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: background .2s;
+    }
+    .cart-item-qty button:hover { background: var(--gold); color: #080706; }
+    .cart-item-qty span { font-family: 'Josefin Sans', sans-serif; font-size: 13px; font-weight: 700; min-width: 18px; text-align: center; }
+    .cart-footer { padding: 20px 24px; border-top: 1px solid var(--border); }
+    .cart-footer-total { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .cart-footer-total span:first-child { font-family: 'Josefin Sans', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+    .cart-footer-total span:last-child { font-family: 'Josefin Sans', sans-serif; font-size: 20px; font-weight: 700; background: linear-gradient(135deg,#e8cb8a,#c8a96a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    #checkoutBtn {
+      width: 100%; padding: 14px; background: linear-gradient(135deg,#d4ae6e,#c8a96a,#a07840);
+      color: #080706; border: none; border-radius: 8px; font-family: 'Josefin Sans', sans-serif;
+      font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+      cursor: pointer; transition: filter .2s, transform .15s;
+    }
+    #checkoutBtn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    #checkoutBtn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
     /* ===== WhatsApp FAB ===== */
     .wa-fab {
       position: fixed;
@@ -1486,7 +1541,7 @@
 <!-- MOBILE NAV -->
 <nav class="mob-nav" id="mobNav" aria-label="Menú mobile">
   <a href="#mates"      onclick="closeMobNav()">Mates</a>
-  <a href="#imperiale" onclick="closeMobNav()">Imperiales</a>
+  <a href="#imperial" onclick="closeMobNav()">Imperiales</a>
   <a href="#torpedo"   onclick="closeMobNav()">Torpedos</a>
   <a href="#algarrobo"  onclick="closeMobNav()">Algarrobo</a>
   <a href="#acero"      onclick="closeMobNav()">Acero Inox</a>
@@ -1627,540 +1682,14 @@
       <p class="sec-sub">Otra forma de vivir el Mate — cada pieza única, hecha a mano en Mar del Plata</p>
     </div>
 
-    <div class="chips">
+    <div class="chips" id="filterChips">
       <button class="chip active" onclick="filter('todos',this)">Todos</button>
-      <button class="chip" onclick="filter('imperial',this)">Imperiales</button>
-      <button class="chip" onclick="filter('torpedo',this)">Torpedos</button>
-      <button class="chip" onclick="filter('algarrobo',this)">Algarrobo</button>
-      <button class="chip" onclick="filter('acero',this)">Acero Inox</button>
-      <button class="chip" onclick="filter('bombilla',this)">Bombillas</button>
-      <button class="chip" onclick="filter('canasta',this)">Canastas</button>
-      <button class="chip" onclick="filter('yerba',this)">Yerbas</button>
     </div>
 
     <div class="prod-grid" id="prodGrid">
-
-      <!-- ── IMPERIALES ── -->
-      <article class="prod-card" id="imperiales" data-cat="imperial">
-        <div class="prod-img-wrap">
-          <img src="img/products/imperial-chocolate.jpg" alt="Imperial Premium Chocolate"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div class="prod-placeholder" style="display:none;">
-            <img src="img/logo-m.png" alt="" class="prod-placeholder-logo"
-                 onerror="this.outerHTML='<div style=\'font-family:Cinzel;font-size:42px;font-weight:900;background:linear-gradient(135deg,#f5d98a,#c8a96a);-webkit-background-clip:text;-webkit-text-fill-color:transparent\'>MM</div>'">
-            <span class="prod-placeholder-txt">Imperial</span>
-          </div>
-          <span class="badge badge-excl">Premium</span>
-          <button class="prod-wish" title="Guardar">♡</button>
-        </div>
-        <div class="prod-body">
-          <span class="prod-cat">Imperial</span>
-          <div class="prod-name">Imperial Premium Chocolate</div>
-          <div class="prod-desc">100% Calabaza y Cuero · Virola y base de Alpaca · Pelotas de Bronce</div>
-          <div class="prod-sep"></div>
-          <div class="prod-footer">
-            <div class="prod-price-wrap">
-              <span class="prod-price">$53.190</span>
-              <span class="prod-cuotas">3 cuotas de $22.163 sin interés</span>
-            </div>
-            <button class="add-btn" onclick="addCart(this)">Agregar</button>
-          </div>
-        </div>
-      </article>
-
-      <article class="prod-card" data-cat="imperial">
-        <div class="prod-img-wrap">
-          <img src="img/products/imperial-animal-print.jpg" alt="Imperial Cuero Animal Print"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div class="prod-placeholder" style="display:none;">
-            <img src="img/logo-m.png" alt="" class="prod-placeholder-logo"
-                 onerror="this.outerHTML='<div style=\'font-family:Cinzel;font-size:42px;font-weight:900;background:linear-gradient(135deg,#f5d98a,#c8a96a);-webkit-background-clip:text;-webkit-text-fill-color:transparent\'>MM</div>'">
-            <span class="prod-placeholder-txt">Imperial</span>
-          </div>
-          <span class="badge badge-new">Nuevo</span>
-          <button class="prod-wish" title="Guardar">♡</button>
-        </div>
-        <div class="prod-body">
-          <span class="prod-cat">Imperial</span>
-          <div class="prod-name">Imperial Cuero Animal Print</div>
-          <div class="prod-desc">100% Calabaza gruesa · Guarda de Alpaca · Cuero animal print exclusivo</div>
-          <div class="prod-sep"></div>
-          <div class="prod-footer">
-            <div class="prod-price-wrap">
-              <span class="prod-price">$53.190</span>
-              <span class="prod-cuotas">3 cuotas de $22.163 sin interés</span>
-            </div>
-            <button class="add-btn" onclick="addCart(this)">Agregar</button>
-          </div>
-        </div>
-      </article>
-
-      <article class="prod-card" data-cat="imperial">
-        <div class="prod-img-wrap">
-          <img src="img/products/imperial-jean.jpg" alt="Imperial Jean"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div class="prod-placeholder" style="display:none;">
-            <img src="img/logo-m.png" alt="" class="prod-placeholder-logo"
-                 onerror="this.outerHTML='<div style=\'font-family:Cinzel;font-size:42px;font-weight:900;background:linear-gradient(135deg,#f5d98a,#c8a96a);-webkit-background-clip:text;-webkit-text-fill-color:transparent\'>MM</div>'">
-            <span class="prod-placeholder-txt">Imperial</span>
-          </div>
-          <span class="badge badge-excl">Premium</span>
-          <button class="prod-wish" title="Guardar">♡</button>
-        </div>
-        <div class="prod-body">
-          <span class="prod-cat">Imperial</span>
-          <div class="prod-name">Imperial Jean</div>
-          <div class="prod-desc">Calabaza premium · Cuero tipo jean · Virola y detalles de Alpaca cincelada a mano</div>
-          <div class="prod-sep"></div>
-          <div class="prod-footer">
-            <div class="prod-price-wrap">
-              <span class="prod-price">$53.190</span>
-              <span class="prod-cuotas">3 cuotas de $22.163 sin interés</span>
-            </div>
-            <button class="add-btn" onclick="addCart(this)">Agregar</button>
-          </div>
-        </div>
-      </article>
-
-      <article class="prod-card" data-cat="imperial">
-        <div class="prod-img-wrap">
-          <img src="img/products/imperial-gajos-pelota.jpg" alt="Imperial Gajos Pelota"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div class="prod-placeholder" style="display:none;">
-            <img src="img/logo-m.png" alt="" class="prod-placeholder-logo"
-                 onerror="this.outerHTML='<div style=\'font-family:Cinzel;font-size:42px;font-weight:900;background:linear-gradient(135deg,#f5d98a,#c8a96a);-webkit-background-clip:text;-webkit-text-fill-color:transparent\'>MM</div>'">
-            <span class="prod-placeholder-txt">Imperial</span>
-          </div>
-          <span class="badge badge-sale">Oferta</span>
-          <button class="prod-wish" title="Guardar">♡</button>
-        </div>
-        <div class="prod-body">
-          <span class="prod-cat">Imperial</span>
-          <div class="prod-name">Imperial Gajos Pelota</div>
-          <div class="prod-desc">Tamaño mediano · Cuero negro · Calabaza natural · Gajos cosidos a mano</div>
-          <div class="prod-sep"></div>
-          <div class="prod-footer">
-            <div class="prod-price-wrap">
-              <span class="prod-price-old">$53.190</span>
-              <span class="prod-price">$42.552</span>
-              <span class="prod-cuotas">con 20% OFF efectivo</span>
-            </div>
-            <button class="add-btn" onclick="addCart(this)">Agregar</button>
-          </div>
-        </div>
-      </article>
-
-      <article class="prod-card" data-cat="imperial">
-        <div class="prod-img-wrap">
-          <img src="img/products/imperial-cuero-liso.jpg" alt="Imperial Cuero Liso Marrón"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div class="prod-placeholder" style="display:none;">
-            <img src="img/logo-m.png" alt="" class="prod-placeholder-logo"
-                 onerror="this.outerHTML='<div style=\'font-family:Cinzel;font-size:42px;font-weight:900;background:linear-gradient(135deg,#f5d98a,#c8a96a);-webkit-background-clip:text;-webkit-text-fill-color:transparent\'>MM</div>'">
-            <span class="prod-placeholder-txt">Imperial</span>
-          </div>
-          <span class="badge badge-excl">Premium</span>
-          <button class="prod-wish" title="Guardar">♡</button>
-        </div>
-        <div class="prod-body">
-          <span class="prod-cat">Imperial</span>
-          <div class="prod-name">Imperial Cuero Liso Marrón</div>
-          <div class="prod-desc">Calabaza gruesa seleccionada · Cuero vacuno liso marrón · Virola de Alpaca plateada</div>
-          <div class="prod-sep"></div>
-          <div class="prod-footer">
-            <div class="prod-price-wrap">
-              <span class="prod-price">$53.190</span>
-              <span class="prod-cuotas">3 cuotas de $22.163 sin interés</span>
-            </div>
-            <button class="add-btn" onclick="addCart(this)">Agregar</button>
-          </div>
-        </div>
-      </article>
-
-      <article class="prod-card" data-cat="imperial">
-        <div class="prod-img-wrap">
-          <img src="img/products/imperial-negro-grabado.jpg" alt="Imperial Cuero Negro Grabado"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div class="prod-placeholder" style="display:none;">
-            <img src="img/logo-m.png" alt="" class="prod-placeholder-logo"
-                 onerror="this.outerHTML='<div style=\'font-family:Cinzel;font-size:42px;font-weight:900;background:linear-gradient(135deg,#f5d98a,#c8a96a);-webkit-background-clip:text;-webkit-text-fill-color:transparent\'>MM</div>'">
-            <span class="prod-placeholder-txt">Imperial</span>
-          </div>
-          <span class="badge badge-new">Nuevo</span>
-          <button class="prod-wish" title="Guardar">♡</button>
-        </div>
-        <div class="prod-body">
-          <span class="prod-cat">Imperial</span>
-          <div class="prod-name">Imperial Cuero Negro Grabado</div>
-          <div class="prod-desc">Cuero negro con grabado láser personalizable · Base y virola de Alpaca · Pelotas de Bronce</div>
-          <div class="prod-sep"></div>
-          <div class="prod-footer">
-            <div class="prod-price-wrap">
-              <span class="prod-price">$58.900</span>
-              <span class="prod-cuotas">3 cuotas de $24.541 sin interés</span>
-            </div>
-            <button class="add-btn" onclick="addCart(this)">Agregar</button>
-          </div>
-        </div>
-      </article>
-
-      <!-- ── TORPEDOS ── -->
-      <article class="prod-card" id="torpedos" data-cat="torpedo">
-        <div class="prod-img-wrap">
-          <img src="img/products/torpedo-algarrobo.jpg" alt="Torpedo Algarrobo Alpaca"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div class="prod-placeholder" style="display:none;">
-            <img src="img/logo-m.png" alt="" class="prod-placeholder-logo"
-                 onerror="this.outerHTML='<div style=\'font-family:Cinzel;font-size:42px;font-weight:900;background:linear-gradient(135deg,#f5d98a,#c8a96a);-webkit-background-clip:text;-webkit-text-fill-color:transparent\'>MM</div>'">
-            <span class="prod-placeholder-txt">Torpedo</span>
-          </div>
-          <span class="badge">Artesanal</span>
-          <button class="prod-wish" title="Guardar">♡</button>
-        </div>
-        <div class="prod-body">
-          <span class="prod-cat">Torpedo</span>
-          <div class="prod-name">Torpedo Algarrobo Alpaca Cincelado</div>
-          <div class="prod-desc">Forma torpedo clásica · Algarrobo seleccionado · Virola Alpaca cincelada uruguaya</div>
-          <div class="prod-sep"></div>
-          <div class="prod-footer">
-            <div class="prod-price-wrap">
-              <span class="prod-price">$44.500</span>
-              <span class="prod-cuotas">3 cuotas de $18.541 sin interés</span>
-            </div>
-            <button class="add-btn" onclick="addCart(this)">Agregar</button>
-          </div>
-        </div>
-      </article>
-
-      <article class="prod-card" data-cat="torpedo">
-        <div class="prod-img-wrap">
-          <img src="img/products/torpedo-calabaza-cuero.jpg" alt="Torpedo Calabaza Cuero"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div class="prod-placeholder" style="display:none;">
-            <img src="img/logo-m.png" alt="" class="prod-placeholder-logo"
-                 onerror="this.outerHTML='<div style=\'font-family:Cinzel;font-size:42px;font-weight:900;background:linear-gradient(135deg,#f5d98a,#c8a96a);-webkit-background-clip:text;-webkit-text-fill-color:transparent\'>MM</div>'">
-            <span class="prod-placeholder-txt">Torpedo</span>
-          </div>
-          <span class="badge">Criollo</span>
-          <button class="prod-wish" title="Guardar">♡</button>
-        </div>
-        <div class="prod-body">
-          <span class="prod-cat">Torpedo</span>
-          <div class="prod-name">Torpedo Calabaza Premium Cuero</div>
-          <div class="prod-desc">Calabaza torpedo premium · Cuero vacuno liso · Virola y base de Alpaca bruñida</div>
-          <div class="prod-sep"></div>
-          <div class="prod-footer">
-            <div class="prod-price-wrap">
-              <span class="prod-price">$47.200</span>
-              <span class="prod-cuotas">3 cuotas de $19.666 sin interés</span>
-            </div>
-            <button class="add-btn" onclick="addCart(this)">Agregar</button>
-          </div>
-        </div>
-      </article>
-
-      <article class="prod-card" data-cat="torpedo">
-        <div class="prod-img-wrap">
-          <img src="img/products/torpedo-animal-print.jpg" alt="Torpedo Cuero Animal Print"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div class="prod-placeholder" style="display:none;">
-            <img src="img/logo-m.png" alt="" class="prod-placeholder-logo"
-                 onerror="this.outerHTML='<div style=\'font-family:Cinzel;font-size:42px;font-weight:900;background:linear-gradient(135deg,#f5d98a,#c8a96a);-webkit-background-clip:text;-webkit-text-fill-color:transparent\'>MM</div>'">
-            <span class="prod-placeholder-txt">Torpedo</span>
-          </div>
-          <span class="badge badge-new">Nuevo</span>
-          <button class="prod-wish" title="Guardar">♡</button>
-        </div>
-        <div class="prod-body">
-          <span class="prod-cat">Torpedo</span>
-          <div class="prod-name">Torpedo Cuero Animal Print</div>
-          <div class="prod-desc">Torpedo mediano · Cuero animal print exclusivo · Virola de Alpaca artesanal cincelada</div>
-          <div class="prod-sep"></div>
-          <div class="prod-footer">
-            <div class="prod-price-wrap">
-              <span class="prod-price">$49.800</span>
-              <span class="prod-cuotas">3 cuotas de $20.750 sin interés</span>
-            </div>
-            <button class="add-btn" onclick="addCart(this)">Agregar</button>
-          </div>
-        </div>
-      </article>
-
-      <!-- ── ALGARROBO ── -->
-      <article class="prod-card" id="algarrobo" data-cat="algarrobo">
-        <div class="prod-img-wrap">
-          <img src="img/products/algarrobo-boca-ancha.jpg" alt="Algarrobo Boca Ancha"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div class="prod-placeholder" style="display:none;">
-            <img src="img/logo-m.png" alt="" class="prod-placeholder-logo"
-                 onerror="this.outerHTML='<div style=\'font-family:Cinzel;font-size:42px;font-weight:900;background:linear-gradient(135deg,#f5d98a,#c8a96a);-webkit-background-clip:text;-webkit-text-fill-color:transparent\'>MM</div>'">
-            <span class="prod-placeholder-txt">Algarrobo</span>
-          </div>
-          <span class="badge">Natural</span>
-          <button class="prod-wish" title="Guardar">♡</button>
-        </div>
-        <div class="prod-body">
-          <span class="prod-cat">Algarrobo</span>
-          <div class="prod-name">Algarrobo Boca Ancha Acero Inox</div>
-          <div class="prod-desc">Madera de algarrobo natural · Boca ancha · Virola de Acero Inoxidable</div>
-          <div class="prod-sep"></div>
-          <div class="prod-footer">
-            <div class="prod-price-wrap">
-              <span class="prod-price">$29.500</span>
-              <span class="prod-cuotas">3 cuotas de $12.291 sin interés</span>
-            </div>
-            <button class="add-btn" onclick="addCart(this)">Agregar</button>
-          </div>
-        </div>
-      </article>
-
-      <article class="prod-card" data-cat="algarrobo">
-        <div class="prod-img-wrap">
-          <img src="img/products/algarrobo-copita.jpg" alt="Algarrobo Copita"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div class="prod-placeholder" style="display:none;">
-            <img src="img/logo-m.png" alt="" class="prod-placeholder-logo"
-                 onerror="this.outerHTML='<div style=\'font-family:Cinzel;font-size:42px;font-weight:900;background:linear-gradient(135deg,#f5d98a,#c8a96a);-webkit-background-clip:text;-webkit-text-fill-color:transparent\'>MM</div>'">
-            <span class="prod-placeholder-txt">Algarrobo</span>
-          </div>
-          <span class="badge">Artesanal</span>
-          <button class="prod-wish" title="Guardar">♡</button>
-        </div>
-        <div class="prod-body">
-          <span class="prod-cat">Algarrobo</span>
-          <div class="prod-name">Algarrobo Copita Virola Alpaca</div>
-          <div class="prod-desc">Forma copita · Madera oscura veteada · Virola y pico loro de Alpaca cincelada</div>
-          <div class="prod-sep"></div>
-          <div class="prod-footer">
-            <div class="prod-price-wrap">
-              <span class="prod-price">$33.800</span>
-              <span class="prod-cuotas">3 cuotas de $14.083 sin interés</span>
-            </div>
-            <button class="add-btn" onclick="addCart(this)">Agregar</button>
-          </div>
-        </div>
-      </article>
-
-      <!-- ── ACERO INOX ── -->
-      <article class="prod-card" id="acero" data-cat="acero">
-        <div class="prod-img-wrap">
-          <img src="img/products/acero-termico.jpg" alt="Mate Térmico Acero"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div class="prod-placeholder" style="display:none;">
-            <img src="img/logo-m.png" alt="" class="prod-placeholder-logo"
-                 onerror="this.outerHTML='<div style=\'font-family:Cinzel;font-size:42px;font-weight:900;background:linear-gradient(135deg,#f5d98a,#c8a96a);-webkit-background-clip:text;-webkit-text-fill-color:transparent\'>MM</div>'">
-            <span class="prod-placeholder-txt">Acero Inox</span>
-          </div>
-          <span class="badge">Térmico</span>
-          <button class="prod-wish" title="Guardar">♡</button>
-        </div>
-        <div class="prod-body">
-          <span class="prod-cat">Acero Inox</span>
-          <div class="prod-name">Térmico Acero 304 Doble Pared</div>
-          <div class="prod-desc">Acero Inox 304 · Doble pared · Bombilla incluida · Ideal para el auto y viajes</div>
-          <div class="prod-sep"></div>
-          <div class="prod-footer">
-            <div class="prod-price-wrap">
-              <span class="prod-price">$24.900</span>
-              <span class="prod-cuotas">3 cuotas de $10.375 sin interés</span>
-            </div>
-            <button class="add-btn" onclick="addCart(this)">Agregar</button>
-          </div>
-        </div>
-      </article>
-
-      <article class="prod-card" data-cat="acero">
-        <div class="prod-img-wrap">
-          <img src="img/products/acero-personalizado.jpg" alt="Térmico Personalizado"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div class="prod-placeholder" style="display:none;">
-            <img src="img/logo-m.png" alt="" class="prod-placeholder-logo"
-                 onerror="this.outerHTML='<div style=\'font-family:Cinzel;font-size:42px;font-weight:900;background:linear-gradient(135deg,#f5d98a,#c8a96a);-webkit-background-clip:text;-webkit-text-fill-color:transparent\'>MM</div>'">
-            <span class="prod-placeholder-txt">Acero Inox</span>
-          </div>
-          <span class="badge badge-new">Personalizable</span>
-          <button class="prod-wish" title="Guardar">♡</button>
-        </div>
-        <div class="prod-body">
-          <span class="prod-cat">Acero Inox</span>
-          <div class="prod-name">Térmico Personalizado + Logo + Bombilla</div>
-          <div class="prod-desc">Grabado láser con tu nombre o logo · Acero Inox 304 · Bombilla filtro incluida</div>
-          <div class="prod-sep"></div>
-          <div class="prod-footer">
-            <div class="prod-price-wrap">
-              <span class="prod-price">$29.800</span>
-              <span class="prod-cuotas">3 cuotas de $12.416 sin interés</span>
-            </div>
-            <button class="add-btn" onclick="addCart(this)">Agregar</button>
-          </div>
-        </div>
-      </article>
-
-      <!-- ── BOMBILLAS ── -->
-      <article class="prod-card" id="bombillas" data-cat="bombilla">
-        <div class="prod-img-wrap">
-          <img src="img/products/bombilla-alpaca-coil.jpg" alt="Bombilla Alpaca Coil"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div class="prod-placeholder" style="display:none;">
-            <img src="img/logo-m.png" alt="" class="prod-placeholder-logo"
-                 onerror="this.outerHTML='<div style=\'font-family:Cinzel;font-size:42px;font-weight:900;background:linear-gradient(135deg,#f5d98a,#c8a96a);-webkit-background-clip:text;-webkit-text-fill-color:transparent\'>MM</div>'">
-            <span class="prod-placeholder-txt">Bombilla</span>
-          </div>
-          <span class="badge badge-excl">Premium</span>
-          <button class="prod-wish" title="Guardar">♡</button>
-        </div>
-        <div class="prod-body">
-          <span class="prod-cat">Bombillas</span>
-          <div class="prod-name">Bombilla Alpaca Coil Premium</div>
-          <div class="prod-desc">Alpaca gruesa · Punta coil de presión · Cuello flexible · Anti-taponamiento garantizado</div>
-          <div class="prod-sep"></div>
-          <div class="prod-footer">
-            <div class="prod-price-wrap">
-              <span class="prod-price">$12.500</span>
-              <span class="prod-cuotas">3 cuotas de $5.208 sin interés</span>
-            </div>
-            <button class="add-btn" onclick="addCart(this)">Agregar</button>
-          </div>
-        </div>
-      </article>
-
-      <article class="prod-card" data-cat="bombilla">
-        <div class="prod-img-wrap">
-          <img src="img/products/bombilla-acero-espiral.jpg" alt="Bombilla Acero Espiral"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div class="prod-placeholder" style="display:none;">
-            <img src="img/logo-m.png" alt="" class="prod-placeholder-logo"
-                 onerror="this.outerHTML='<div style=\'font-family:Cinzel;font-size:42px;font-weight:900;background:linear-gradient(135deg,#f5d98a,#c8a96a);-webkit-background-clip:text;-webkit-text-fill-color:transparent\'>MM</div>'">
-            <span class="prod-placeholder-txt">Bombilla</span>
-          </div>
-          <span class="badge">Inox</span>
-          <button class="prod-wish" title="Guardar">♡</button>
-        </div>
-        <div class="prod-body">
-          <span class="prod-cat">Bombillas</span>
-          <div class="prod-name">Bombilla Acero Inox Punta Espiral</div>
-          <div class="prod-desc">Acero inoxidable 304 · Punta espiral · Fácil limpieza · Resistente y duradera</div>
-          <div class="prod-sep"></div>
-          <div class="prod-footer">
-            <div class="prod-price-wrap">
-              <span class="prod-price">$8.900</span>
-              <span class="prod-cuotas">3 cuotas de $3.708 sin interés</span>
-            </div>
-            <button class="add-btn" onclick="addCart(this)">Agregar</button>
-          </div>
-        </div>
-      </article>
-
-      <!-- ── CANASTAS ── -->
-      <article class="prod-card" data-cat="canasta">
-        <div class="prod-img-wrap">
-          <img src="img/products/canasta-regalo-imperial.jpg" alt="Canasta Regalo Imperial"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div class="prod-placeholder" style="display:none;">
-            <img src="img/logo-m.png" alt="" class="prod-placeholder-logo"
-                 onerror="this.outerHTML='<div style=\'font-family:Cinzel;font-size:42px;font-weight:900;background:linear-gradient(135deg,#f5d98a,#c8a96a);-webkit-background-clip:text;-webkit-text-fill-color:transparent\'>MM</div>'">
-            <span class="prod-placeholder-txt">Gift Set</span>
-          </div>
-          <span class="badge badge-excl">Gift Set</span>
-          <button class="prod-wish" title="Guardar">♡</button>
-        </div>
-        <div class="prod-body">
-          <span class="prod-cat">Canastas</span>
-          <div class="prod-name">Canasta Regalo Completa Imperial</div>
-          <div class="prod-desc">Mate Imperial + Bombilla + Yerba 500g + Termo · Embalaje de regalo premium incluido</div>
-          <div class="prod-sep"></div>
-          <div class="prod-footer">
-            <div class="prod-price-wrap">
-              <span class="prod-price">$89.900</span>
-              <span class="prod-cuotas">3 cuotas de $37.458 sin interés</span>
-            </div>
-            <button class="add-btn" onclick="addCart(this)">Agregar</button>
-          </div>
-        </div>
-      </article>
-
-      <article class="prod-card" data-cat="canasta">
-        <div class="prod-img-wrap">
-          <img src="img/products/combo-starter.jpg" alt="Combo Starter"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div class="prod-placeholder" style="display:none;">
-            <img src="img/logo-m.png" alt="" class="prod-placeholder-logo"
-                 onerror="this.outerHTML='<div style=\'font-family:Cinzel;font-size:42px;font-weight:900;background:linear-gradient(135deg,#f5d98a,#c8a96a);-webkit-background-clip:text;-webkit-text-fill-color:transparent\'>MM</div>'">
-            <span class="prod-placeholder-txt">Combo</span>
-          </div>
-          <span class="badge">Combo</span>
-          <button class="prod-wish" title="Guardar">♡</button>
-        </div>
-        <div class="prod-body">
-          <span class="prod-cat">Canastas</span>
-          <div class="prod-name">Combo Starter Mate + Bombilla + Yerba</div>
-          <div class="prod-desc">Mate de algarrobo + Bombilla coil + Yerba Premium 500g · Ideal para iniciar o regalar</div>
-          <div class="prod-sep"></div>
-          <div class="prod-footer">
-            <div class="prod-price-wrap">
-              <span class="prod-price">$52.400</span>
-              <span class="prod-cuotas">3 cuotas de $21.833 sin interés</span>
-            </div>
-            <button class="add-btn" onclick="addCart(this)">Agregar</button>
-          </div>
-        </div>
-      </article>
-
-      <!-- ── YERBAS ── -->
-      <article class="prod-card" id="yerbas" data-cat="yerba">
-        <div class="prod-img-wrap">
-          <img src="img/products/yerba-premium-milan.jpg" alt="Yerba Premium Milan"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div class="prod-placeholder" style="display:none;">
-            <img src="img/logo-m.png" alt="" class="prod-placeholder-logo"
-                 onerror="this.outerHTML='<div style=\'font-family:Cinzel;font-size:42px;font-weight:900;background:linear-gradient(135deg,#f5d98a,#c8a96a);-webkit-background-clip:text;-webkit-text-fill-color:transparent\'>MM</div>'">
-            <span class="prod-placeholder-txt">Yerba</span>
-          </div>
-          <span class="badge">Natural</span>
-          <button class="prod-wish" title="Guardar">♡</button>
-        </div>
-        <div class="prod-body">
-          <span class="prod-cat">Yerbas</span>
-          <div class="prod-name">Yerba Premium Selección Milán 500g</div>
-          <div class="prod-desc">Blend exclusivo · Curada 24 meses · Sabor suave y prolongado · Sin TACC · Artesanal</div>
-          <div class="prod-sep"></div>
-          <div class="prod-footer">
-            <div class="prod-price-wrap">
-              <span class="prod-price">$9.800</span>
-              <span class="prod-cuotas">3 cuotas de $4.083 sin interés</span>
-            </div>
-            <button class="add-btn" onclick="addCart(this)">Agregar</button>
-          </div>
-        </div>
-      </article>
-
-      <article class="prod-card" data-cat="yerba">
-        <div class="prod-img-wrap">
-          <img src="img/products/yerba-organica.jpg" alt="Yerba Orgánica"
-               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div class="prod-placeholder" style="display:none;">
-            <img src="img/logo-m.png" alt="" class="prod-placeholder-logo"
-                 onerror="this.outerHTML='<div style=\'font-family:Cinzel;font-size:42px;font-weight:900;background:linear-gradient(135deg,#f5d98a,#c8a96a);-webkit-background-clip:text;-webkit-text-fill-color:transparent\'>MM</div>'">
-            <span class="prod-placeholder-txt">Yerba</span>
-          </div>
-          <span class="badge badge-new">Orgánica</span>
-          <button class="prod-wish" title="Guardar">♡</button>
-        </div>
-        <div class="prod-body">
-          <span class="prod-cat">Yerbas</span>
-          <div class="prod-name">Yerba Orgánica Flor de Milán 1kg</div>
-          <div class="prod-desc">Orgánica certificada · Sin palos · Sabor intenso y duradero · Producción limitada</div>
-          <div class="prod-sep"></div>
-          <div class="prod-footer">
-            <div class="prod-price-wrap">
-              <span class="prod-price">$17.500</span>
-              <span class="prod-cuotas">3 cuotas de $7.291 sin interés</span>
-            </div>
-            <button class="add-btn" onclick="addCart(this)">Agregar</button>
-          </div>
-        </div>
-      </article>
-
+      <div id="prodLoading" style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--muted);">
+        <div style="font-family:'Josefin Sans',sans-serif;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;">Cargando colección...</div>
+      </div>
     </div><!-- /prod-grid -->
   </div>
 </section>
@@ -2349,43 +1878,199 @@ function filter(cat, btn) {
   }, 450);
 }
 
-// ── ADD TO CART ──────────────────────────────────────────
-let cartN = 0;
-function addCart(btn) {
-  const orig = btn.textContent;
+// ── API ───────────────────────────────────────────────────
+const API = 'http://localhost:3001';
+
+function formatPrice(cents) {
+  return '$\u202f' + Math.round(cents / 100).toLocaleString('es-AR');
+}
+
+// ── CART ─────────────────────────────────────────────────
+let cart = JSON.parse(localStorage.getItem('mm_cart') || '[]');
+
+function saveCart() { localStorage.setItem('mm_cart', JSON.stringify(cart)); }
+
+function updateCartBadge() {
+  const total = cart.reduce((s, i) => s + i.quantity, 0);
+  const badge = document.getElementById('cartBadge');
+  badge.textContent = total || '';
+  badge.style.display = total > 0 ? 'flex' : 'none';
+}
+updateCartBadge();
+
+function addToCart(productId, name, price, imageUrl, btn) {
+  const existing = cart.find(i => i.productId === productId);
+  if (existing) existing.quantity++;
+  else cart.push({ productId, name, price, imageUrl, quantity: 1 });
+  saveCart();
+  updateCartBadge();
   btn.textContent = '✓ Agregado';
   btn.style.background = 'linear-gradient(135deg,#4bb98c,#3aa070)';
   btn.style.color = '#fff';
-  cartN++;
-  // update badge
-  const badge = document.getElementById('cartBadge');
-  badge.textContent = cartN;
-  badge.style.display = 'flex';
-  // pulse cart icon
   const cartBtn = document.getElementById('cartBtn');
   cartBtn.style.transform = 'scale(1.18)';
-  cartBtn.style.borderColor = '#4bb98c';
-  setTimeout(() => {
-    cartBtn.style.transform = '';
-    cartBtn.style.borderColor = '';
-  }, 400);
-  setTimeout(() => {
-    btn.textContent = orig;
-    btn.style.background = '';
-    btn.style.color = '';
-  }, 2000);
+  setTimeout(() => { cartBtn.style.transform = ''; }, 400);
+  setTimeout(() => { btn.textContent = 'Agregar'; btn.style.background = ''; btn.style.color = ''; }, 2000);
+}
+
+// Cart Drawer
+const cartDrawer = document.getElementById('cartDrawer');
+document.getElementById('cartBtn').addEventListener('click', e => {
+  e.preventDefault();
+  renderCartDrawer();
+  cartDrawer.classList.add('open');
+  document.body.style.overflow = 'hidden';
+});
+document.getElementById('cartOverlay').addEventListener('click', closeCartDrawer);
+
+function closeCartDrawer() {
+  cartDrawer.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function renderCartDrawer() {
+  const list = document.getElementById('cartItems');
+  const footer = document.getElementById('cartFooter');
+  if (cart.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:48px 20px;color:var(--muted);font-family:\'Josefin Sans\',sans-serif;font-size:13px;letter-spacing:.08em;text-transform:uppercase;">Tu carrito está vacío</div>';
+    footer.style.display = 'none';
+    return;
+  }
+  footer.style.display = 'block';
+  const total = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+  list.innerHTML = cart.map((item, idx) => `
+    <div class="cart-item">
+      <img src="${item.imageUrl ? API + '/' + item.imageUrl : ''}" alt="${item.name}" onerror="this.style.display='none'">
+      <div class="cart-item-info">
+        <div class="cart-item-name">${item.name}</div>
+        <div class="cart-item-price">${formatPrice(item.price)}</div>
+      </div>
+      <div class="cart-item-qty">
+        <button onclick="changeQty(${idx},-1)">−</button>
+        <span>${item.quantity}</span>
+        <button onclick="changeQty(${idx},1)">+</button>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('cartTotal').textContent = formatPrice(total);
+}
+
+function changeQty(idx, delta) {
+  cart[idx].quantity += delta;
+  if (cart[idx].quantity <= 0) cart.splice(idx, 1);
+  saveCart();
+  updateCartBadge();
+  renderCartDrawer();
+}
+
+async function checkout() {
+  const btn = document.getElementById('checkoutBtn');
+  btn.textContent = 'Procesando...';
+  btn.disabled = true;
+  try {
+    const res = await fetch(API + '/payments/create-checkout-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: cart.map(i => ({ productId: i.productId, quantity: i.quantity })) })
+    });
+    const data = await res.json();
+    if (data.url) {
+      cart = []; saveCart(); updateCartBadge();
+      window.location.href = data.url;
+    } else { throw new Error('No URL'); }
+  } catch {
+    btn.textContent = 'Error — Intentá de nuevo';
+    btn.disabled = false;
+    setTimeout(() => { btn.textContent = 'Finalizar compra'; }, 3000);
+  }
+}
+
+// ── LOAD CATEGORIES ───────────────────────────────────────
+async function loadCategories() {
+  try {
+    const cats = await fetch(API + '/categories').then(r => r.json());
+    const chips = document.getElementById('filterChips');
+    chips.innerHTML = '<button class="chip active" onclick="filter(\'todos\',this)">Todos</button>';
+    cats.forEach(c => {
+      const btn = document.createElement('button');
+      btn.className = 'chip';
+      btn.textContent = c.name;
+      btn.onclick = function() { filter(c.slug, this); };
+      chips.appendChild(btn);
+    });
+  } catch(e) { console.warn('Categories unavailable', e); }
+}
+
+// ── LOAD PRODUCTS ─────────────────────────────────────────
+async function loadProducts() {
+  const grid = document.getElementById('prodGrid');
+  try {
+    const products = await fetch(API + '/products').then(r => r.json());
+    if (!products.length) { grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted)">No hay productos disponibles</div>'; return; }
+    grid.innerHTML = products.map((p, i) => {
+      const badgeClass = p.badgeType ? 'badge-' + p.badgeType : 'badge-excl';
+      const badgeHtml = p.badge ? `<span class="badge ${badgeClass}">${p.badge}</span>` : '';
+      const imgSrc = p.imageUrl ? API + '/' + p.imageUrl : '';
+      const catSlug = p.category ? p.category.slug : '';
+      const catName = p.category ? p.category.name : '';
+      return `
+      <article class="prod-card" data-cat="${catSlug}" data-id="${p.id}" style="animation-delay:${i*0.04}s">
+        <div class="prod-img-wrap">
+          <img src="${imgSrc}" alt="${p.name}"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div class="prod-placeholder" style="display:none">
+            <div style="font-family:Cinzel,serif;font-size:28px;font-weight:900;background:linear-gradient(135deg,#f5d98a,#c8a96a);-webkit-background-clip:text;-webkit-text-fill-color:transparent">MM</div>
+            <div class="prod-placeholder-txt">Milán Matería</div>
+          </div>
+          ${badgeHtml}
+          <button class="prod-wish" aria-label="Favorito">♡</button>
+        </div>
+        <div class="prod-body">
+          <div class="prod-cat">${catName}</div>
+          <div class="prod-name">${p.name}</div>
+          <div class="prod-desc">${p.description || ''}</div>
+          <div class="prod-sep"></div>
+          <div class="prod-footer">
+            <div class="prod-price-wrap">
+              <div class="prod-price">${formatPrice(p.price)}</div>
+              <div class="prod-cuotas">3 cuotas sin interés de ${formatPrice(Math.round(p.price/3))}</div>
+            </div>
+            <button class="add-btn" onclick="addToCart(${p.id},'${p.name.replace(/'/g,"\\'")}',${p.price},'${p.imageUrl||''}',this)">
+              Agregar
+            </button>
+          </div>
+        </div>
+      </article>`;
+    }).join('');
+    // Re-attach event delegation for modal and wishlist
+    initCardEvents();
+  } catch(e) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted)">Error cargando productos. ¿Está el servidor corriendo?</div>';
+    console.error('Products unavailable', e);
+  }
+}
+
+function initCardEvents() {
+  // Wishlist toggle (event delegation on grid)
+  document.getElementById('prodGrid').addEventListener('click', e => {
+    const wish = e.target.closest('.prod-wish');
+    if (wish) {
+      const on = wish.textContent === '♥';
+      wish.textContent = on ? '♡' : '♥';
+      wish.style.color = on ? '' : '#e05566';
+      wish.style.transform = 'scale(1.3)';
+      setTimeout(() => { wish.style.transform = ''; }, 200);
+    }
+  });
+  // Product modal (event delegation on grid)
+  document.getElementById('prodGrid').addEventListener('click', e => {
+    if (e.target.closest('.add-btn') || e.target.closest('.prod-wish')) return;
+    const card = e.target.closest('.prod-card');
+    if (card) openProductModal(card);
+  });
 }
 
 // ── WISHLIST TOGGLE ───────────────────────────────────────
-document.querySelectorAll('.prod-wish').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const on = btn.textContent === '♥';
-    btn.textContent = on ? '♡' : '♥';
-    btn.style.color = on ? '' : '#e05566';
-    btn.style.transform = on ? '' : 'scale(1.3)';
-    setTimeout(() => { btn.style.transform = ''; }, 200);
-  });
-});
 
 // ── NAV ACTIVE ───────────────────────────────────────────
 document.querySelectorAll('nav a').forEach(a => {
@@ -2404,6 +2089,7 @@ function openProductModal(card) {
   const desc    = card.querySelector('.prod-desc');
   const price   = card.querySelector('.prod-price');
   const cuotas  = card.querySelector('.prod-cuotas');
+  const productId = card.dataset.id;
 
   document.getElementById('modalImg').src           = img    ? img.src         : '';
   document.getElementById('modalImg').alt           = img    ? img.alt         : '';
@@ -2417,34 +2103,49 @@ function openProductModal(card) {
   const waText = encodeURIComponent('Hola! Me interesa el mate ' + (name ? name.textContent : '') + '. ¿Podés darme más info?');
   document.getElementById('modalWaLink').href = 'https://wa.me/5492236667793?text=' + waText;
 
+  // Wire modal add button
+  document.getElementById('modalAddBtn').onclick = () => {
+    const imgSrc = img ? img.src.replace(API+'/', '') : '';
+    addToCart(parseInt(productId), name ? name.textContent : '', parseInt(price ? price.textContent.replace(/[^0-9]/g,'') * 100 : 0), imgSrc, document.getElementById('modalAddBtn'));
+  };
+
   overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
 }
 
 function closeProductModal() {
-  const overlay = document.getElementById('prodModalOverlay');
-  overlay.classList.remove('open');
+  document.getElementById('prodModalOverlay').classList.remove('open');
   document.body.style.overflow = '';
 }
 
-// Open on card click (but not on the "Agregar" button or wish button)
-document.querySelectorAll('.prod-card').forEach(card => {
-  card.addEventListener('click', e => {
-    if (e.target.closest('.add-btn') || e.target.closest('.prod-wish')) return;
-    openProductModal(card);
-  });
-});
-
-// Close on overlay backdrop click
 document.addEventListener('click', e => {
   if (e.target.id === 'prodModalOverlay') closeProductModal();
 });
-
-// Close on Escape
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeProductModal();
+  if (e.key === 'Escape') { closeProductModal(); closeCartDrawer(); }
 });
+
+// ── INIT ─────────────────────────────────────────────────
+loadCategories();
+loadProducts();
 </script>
+
+<!-- CART DRAWER -->
+<div class="cart-overlay" id="cartOverlay"></div>
+<div class="cart-drawer" id="cartDrawer">
+  <div class="cart-drawer-hd">
+    <span>Tu carrito</span>
+    <button class="cart-drawer-close" onclick="closeCartDrawer()">✕</button>
+  </div>
+  <div class="cart-items" id="cartItems"></div>
+  <div class="cart-footer" id="cartFooter" style="display:none">
+    <div class="cart-footer-total">
+      <span>Total</span>
+      <span id="cartTotal">$0</span>
+    </div>
+    <button id="checkoutBtn" onclick="checkout()">Finalizar compra</button>
+  </div>
+</div>
 
 <!-- PRODUCT DETAIL MODAL -->
 <div class="prod-modal-overlay" id="prodModalOverlay">
@@ -2463,7 +2164,7 @@ document.addEventListener('keydown', e => {
       <div class="prod-modal-price" id="modalPrice"></div>
       <div class="prod-modal-cuotas" id="modalCuotas"></div>
       <div class="prod-modal-actions">
-        <button class="prod-modal-add" onclick="closeProductModal()">Agregar al carrito</button>
+        <button class="prod-modal-add" id="modalAddBtn">Agregar al carrito</button>
         <a class="prod-modal-wa" id="modalWaLink" href="#" target="_blank">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
           Consultar por WhatsApp

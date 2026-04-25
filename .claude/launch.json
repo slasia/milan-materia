@@ -1,0 +1,34 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "milan-materia",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8765"],
+      "port": 8765
+    },
+    {
+      "name": "milan-materia-api",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start:dev"],
+      "cwd": "/Users/sebastianlasia/MilanMateria/backend",
+      "port": 3001
+    },
+    {
+      "name": "milan-materia-react",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "/Users/sebastianlasia/MilanMateria/frontend",
+      "port": 5174,
+      "autoPort": false
+    },
+    {
+      "name": "milan-materia-admin",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "/Users/sebastianlasia/MilanMateria/admin",
+      "port": 5175,
+      "autoPort": false
+    }
+  ]
+}
