@@ -120,7 +120,18 @@ export default function CartDrawer({ open, onClose }) {
     setLoading(true);
     try {
       const payload = items.map(i => ({ productId: i.productId, quantity: i.quantity }));
-      const data = await createCheckout(payload, form);
+      // Strip UI-only fields (customerEmailConfirm) — backend rejects unknown properties
+      const {
+        customerName, customerEmail, customerPhone,
+        shippingAddress, shippingCity, shippingProvince, shippingZip,
+        notes, promoCode,
+      } = form;
+      const shippingData = {
+        customerName, customerEmail, customerPhone,
+        shippingAddress, shippingCity, shippingProvince, shippingZip,
+        notes, promoCode,
+      };
+      const data = await createCheckout(payload, shippingData);
       if (data?.url) {
         clear();
         setStep('cart');
