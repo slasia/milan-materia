@@ -12,7 +12,7 @@ async function bootstrap() {
   app.use(helmet());
 
   // ── CORS — explicit whitelist, never wildcard with credentials ──────────────
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5174';
+  const frontendUrl = process.env.VITE_FRONTEND_URL || 'http://localhost:5174';
   const adminUrl    = process.env.ADMIN_URL    || 'http://localhost:5175';
   const allowedOrigins = [frontendUrl, adminUrl].filter(Boolean);
 
