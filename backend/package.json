@@ -4,12 +4,13 @@
   "scripts": {
     "start:dev": "nest start --watch",
     "start": "node dist/main",
-    "start:prod": "prisma db push && node dist/main",
+    "start:prod": "prisma db push --accept-data-loss && node dist/main",
+    "db:sync": "prisma db push --accept-data-loss",
     "build": "nest build",
     "build:prod": "nest build && prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
-    "prisma:push": "prisma db push",
+    "prisma:push": "prisma db push --accept-data-loss",
     "prisma:studio": "prisma studio",
     "seed": "ts-node prisma/seed.ts"
   },
